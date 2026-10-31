@@ -9,6 +9,7 @@ class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, trim_whitespace=False)
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
 
     def validate(self, attrs):
         attrs["email"] = attrs["email"].strip().lower()
@@ -36,7 +37,7 @@ class MeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "memberships"]
+        fields = ["id", "email", "first_name", "last_name", "memberships"]
         read_only_fields = fields
 
     def get_memberships(self, user):

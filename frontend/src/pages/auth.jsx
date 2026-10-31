@@ -67,7 +67,7 @@ export function Login() {
 
 export function Register() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ first_name: "", email: "", password: "", confirm: "" });
+  const [form, setForm] = useState({ first_name: "", last_name: "", email: "", password: "", confirm: "" });
   const [errors, setErrors] = useState({});
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -80,7 +80,12 @@ export function Register() {
     setErrors({});
     setBusy(true);
     try {
-      await api.post("/auth/register/", { email: form.email.trim(), password: form.password, first_name: form.first_name });
+      await api.post("/auth/register/", {
+        email: form.email.trim(),
+        password: form.password,
+        first_name: form.first_name,
+        last_name: form.last_name,
+      });
       navigate("/login", { state: { notice: "Account created. Please log in." } });
     } catch (err) {
       setErrors(fieldErrors(err));
@@ -93,10 +98,16 @@ export function Register() {
     <Shell title="Create your account">
       {error && <Alert variant="danger" role="alert">{error}</Alert>}
       <Form onSubmit={submit}>
-        <Form.Group className="mb-3" controlId="first_name">
-          <Form.Label>Name (optional)</Form.Label>
-          <Form.Control value={form.first_name} onChange={set("first_name")} autoComplete="given-name" />
-        </Form.Group>
+        <div className="row g-2 mb-3">
+          <Form.Group className="col-6" controlId="first_name">
+            <Form.Label>First name</Form.Label>
+            <Form.Control value={form.first_name} onChange={set("first_name")} autoComplete="given-name" />
+          </Form.Group>
+          <Form.Group className="col-6" controlId="last_name">
+            <Form.Label>Last name</Form.Label>
+            <Form.Control value={form.last_name} onChange={set("last_name")} autoComplete="family-name" />
+          </Form.Group>
+        </div>
         <Form.Group className="mb-3" controlId="email">
           <Form.Label>Email</Form.Label>
           <Form.Control type="email" required value={form.email} onChange={set("email")} autoComplete="email"

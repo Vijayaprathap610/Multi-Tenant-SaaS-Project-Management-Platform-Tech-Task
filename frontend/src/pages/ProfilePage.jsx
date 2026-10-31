@@ -6,15 +6,21 @@ import { useAuth } from "../context/AuthContext";
 
 export default function ProfilePage() {
   const { user, refresh } = useAuth();
-  const [name, setName] = useState(user.first_name || "");
+  const [firstName, setFirstName] = useState(user.first_name || "");
+  const [lastName, setLastName] = useState(user.last_name || "");
   const [pw, setPw] = useState({ current_password: "", new_password: "" });
   const [msg, setMsg] = useState({});
   const [errors, setErrors] = useState({});
 
   const saveName = async (e) => {
     e.preventDefault();
-    try { await api.patch("/auth/me/", { first_name: name }); await refresh(); setMsg({ profile: "Profile saved." }); }
-    catch (err) { setMsg({ profileErr: errorMessage(err) }); }
+    try {
+      await api.patch("/auth/me/", { first_name: firstName, last_name: lastName });
+      await refresh();
+      setMsg({ profile: "Profile saved." });
+    } catch (err) {
+      setMsg({ profileErr: errorMessage(err) });
+    }
   };
   const changePw = async (e) => {
     e.preventDefault();
@@ -30,10 +36,21 @@ export default function ProfilePage() {
         {msg.profile && <Alert variant="success">{msg.profile}</Alert>}
         {msg.profileErr && <Alert variant="danger" role="alert">{msg.profileErr}</Alert>}
         <Form onSubmit={saveName}>
-          <Form.Group className="mb-3" controlId="email"><Form.Label>Email</Form.Label><Form.Control value={user.email} disabled readOnly /></Form.Group>
-          <Form.Group className="mb-3" controlId="name"><Form.Label>Name</Form.Label>
-            <Form.Control value={name} onChange={(e) => setName(e.target.value)} maxLength={150} /></Form.Group>
-          <Button type="submit">Save</Button>
+          <Form.Group className="mb-3" controlId="email">
+            <Form.Label>Email</Form.Label>
+            <Form.Control value={user.email} disabled readOnly />
+          </Form.Group>
+          <div className="row g-3 mb-3">
+            <Form.Group className="col-md-6" controlId="first-name">
+              <Form.Label>First name</Form.Label>
+              <Form.Control value={firstName} onChange={(e) => setFirstName(e.target.value)} maxLength={150} />
+            </Form.Group>
+            <Form.Group className="col-md-6" controlId="last-name">
+              <Form.Label>Last name</Form.Label>
+              <Form.Control value={lastName} onChange={(e) => setLastName(e.target.value)} maxLength={150} />
+            </Form.Group>
+          </div>
+          <Button type="submit">Save profile</Button>
         </Form>
       </Card.Body></Card>
       <Card><Card.Body>

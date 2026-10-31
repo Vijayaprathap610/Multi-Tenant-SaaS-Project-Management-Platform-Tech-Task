@@ -49,7 +49,8 @@ class RegisterView(PublicView):
             try:
                 with transaction.atomic():
                     user = User.objects.create_user(d["email"], d["password"],
-                                                    first_name=d.get("first_name", ""))
+                                                    first_name=d.get("first_name", ""),
+                                                    last_name=d.get("last_name", ""))
                 record("auth.registered", actor=user)
             except IntegrityError:
                 pass
@@ -96,9 +97,15 @@ class MeView(APIView):
     def patch(self, request):
         if request.user.is_platform_admin:
             return Response({"detail": "Not found."}, status=404)
-        first_name = str(request.data.get("first_name", request.user.first_name))[:150]
-        request.user.first_name = first_name  # email and privileges are not editable here
-        request.user.save(update_fields=["first_name"])
+        updates = []
+        if "first_name" in request.data:
+            request.user.first_name = str(request.data["first_name"])[:150]
+            updates.append("first_name")
+        if "last_name" in request.data:
+            request.user.last_name = str(request.data["last_name"])[:150]
+            updates.append("last_name")
+        if updates:
+            request.user.save(update_fields=updates)
         return Response(MeSerializer(request.user).data)
 
 
