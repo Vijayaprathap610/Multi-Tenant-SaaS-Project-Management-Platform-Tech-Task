@@ -18,7 +18,19 @@ function Card({ issue, index, linkBase, disabled }) {
             <Badge bg={PRIORITY[issue.priority]} text={issue.priority === "high" ? "dark" : undefined}>{issue.priority}</Badge>
           </div>
           <div>{issue.title}</div>
-          {issue.assignee_email && <div className="small text-muted">{issue.assignee_email}</div>}
+          {issue.labels && issue.labels.length > 0 && (
+            <div className="d-flex flex-wrap gap-1 my-1">
+              {issue.labels.map((lbl) => (
+                <Badge key={lbl} bg="light" text="dark" className="border fw-normal" style={{ fontSize: "0.7rem" }}>
+                  {lbl}
+                </Badge>
+              ))}
+            </div>
+          )}
+          <div className="d-flex justify-content-between align-items-center mt-1 small text-muted">
+            {issue.assignee_email ? <span>{issue.assignee_email}</span> : <span className="fst-italic">Unassigned</span>}
+            {issue.due_date && <span>📅 {issue.due_date}</span>}
+          </div>
         </div>
       )}
     </Draggable>
