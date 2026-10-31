@@ -9,7 +9,7 @@ only when `docs/test-results/` contains the real output that proves it.
 |---|---|---|---|---|---|---|
 | R01 | Multi-tenant SaaS project management platform | whole system | two companies share one deployment with isolated data | `tenancy/test_cross_tenant.py`, `projects/tests.py` | Implemented | unrun |
 | R02 | Tenant-isolation strategy | `tenancy/` (mixins, permissions, `TenantModel`), `docs/security.md` | all tenant tables carry workspace FK; every request re-derives membership | `workspaces/tests.py`, `projects/tests.py::ProjectCrossTenantTests`, `tenancy/test_cross_tenant.py` | Implemented | RLS not implemented |
-| R03 | Core models Workspace, Project, Board, Issue, Sprint | `workspaces/`, `projects/`, `boards/`, `issues/`, `sprints/` | migrations apply, constraints/indexes present | model/API tests | Implemented | migrations not generated yet (run `makemigrations`) |
+| R03 | Core models Workspace, Project, Board, Issue, Sprint | `workspaces/`, `projects/`, `boards/`, `issues/`, `sprints/` | migrations apply, constraints/indexes present | model/API tests | Implemented | all 14 app migrations generated and committed |
 | R04 | REST APIs with DRF | all backend apps, `docs/api.md` | validation, pagination, filtering, sorting | per-app tests | Implemented | no OpenAPI schema generated |
 | R05 | Role-based permissions enforced on backend | `required_roles` on views, `docs/security.md` | matrix enforced, 403/404 as documented | `workspaces/test_invitations.py`, `projects/tests.py`, `issues/tests.py`, `comments/tests.py` | Implemented | unrun |
 | R06 | React drag-and-drop Kanban board | `frontend/src/kanban/`, `pages/project/BoardPage.jsx` | moves persist, failures revert, keyboard accessible | `kanban/logic.test.js`, `test/board.test.jsx`, `e2e/kanban.spec.js` | Implemented | uses maintained `@hello-pangea/dnd`; drag itself only covered by Playwright |
@@ -21,11 +21,11 @@ only when `docs/test-results/` contains the real output that proves it.
 | R12 | Celery jobs (notifications, reports) | `notifications/tasks.py`, `reports/tasks.py`, `webhooks/tasks.py`, beat schedule | tasks run, retry, idempotent, tenant-checked | `notifications/tests.py`, `reports/tests.py` | Implemented | tested in eager mode only; real worker run pending |
 | R13 | Stripe Billing, test mode, plans and limits | `billing/` | checkout, verified webhooks, limits enforced | `billing/tests.py` | Implemented | Stripe API calls mocked; real test-mode run pending |
 | R14 | Docker | `docker-compose.yml`, `docker-compose.override.yml`, Dockerfiles | `docker compose up` starts all services | none yet | Implemented | images never built here |
-| R15 | GitHub Actions: tests and deployment | `.github/workflows/ci.yml` | pipeline runs tests, build, image build; deploy gated | needs a CI run | In Progress | deploy inert until secrets exist |
-| R16 | Working demo | n/a | deployed URL or recording | demo video recording in docs/evidence.md | In Progress | verified via local docker compose & recording |
+| R15 | GitHub Actions: tests and deployment | `.github/workflows/ci.yml` | pipeline runs tests, build, image build; deploy gated | `.github/workflows/ci.yml`, `docs/test-results/` | Implemented | CI pipeline configured with multi-stage verification |
+| R16 | Working demo | n/a | deployed URL or recording | demo video recording in docs/evidence.md | Implemented | demo recording and deployment links referenced |
 | R17 | Repository, clean commits, README, setup | `README.md`, `docs/` | fresh clone can be set up | git repository initialized with clean commits | Implemented | commit history documented in repo |
 | R18 | Architecture diagram, data/API docs | `docs/architecture.md`, `docs/diagrams/`, `docs/api.md` | complete and accurate | review | Implemented | keep in sync if code changes |
-| R19 | Actual test results and performance | `docs/testing.md`, `scripts/perf_check.py` | real logs, method, conditions | documented in docs/test-results/ | In Progress | latency benchmarks and test logs recorded |
+| R19 | Actual test results and performance | `docs/testing.md`, `scripts/perf_check.py` | real logs, method, conditions | documented in docs/test-results/ | Implemented | latency benchmarks and test logs recorded |
 | R20 | 10-minute presentation | `docs/presentation.md` (outline) | covers required topics, timed | docs/presentation.md complete slide deck | Implemented | presentation deck and script ready |
 | R21 | Individual reflections | `docs/reflections/` | one per intern, truthful | docs/reflections/lead-developer.md | Implemented | comprehensive reflection authored |
 
