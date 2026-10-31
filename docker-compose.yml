@@ -1,0 +1,53 @@
+# Production-style base. Development adds bind mounts and runserver via docker-compose.override.yml
+# (loaded automatically by `docker compose up`). Image tags are placeholders to verify (docs/versions.md).
+services:
+  db:
+    image: postgres:16
+    env_file: .env
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  redis:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  backend:
+    build: ./backend
+    env_file: .env
+    command: sh -c "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 60"
+    volumes: ["media:/app/media"]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('localhost', 8000), 3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  worker:
+    build: ./backend
+    env_file: .env
+    command: celery -A config worker -l info
+    volumes: ["media:/app/media"]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+  beat:
+    build: ./backend
+    env_file: .env
+    command: celery -A config beat -l info
+    depends_on:
+      redis: {condition: service_healthy}
+  frontend:
+    build: ./frontend
+    ports: ["5173:80"]
+    depends_on: [backend]
+volumes:
+  pgdata:
+  media:

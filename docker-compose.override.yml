@@ -1,0 +1,10 @@
+# Development overrides (auto-loaded). Do NOT use on a server: run `docker compose -f docker-compose.yml ...`.
+services:
+  backend:
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    volumes: ["./backend:/app", "media:/app/media"]
+    ports: ["8000:8000"]
+  worker:
+    volumes: ["./backend:/app", "media:/app/media"]
+  beat:
+    volumes: ["./backend:/app"]

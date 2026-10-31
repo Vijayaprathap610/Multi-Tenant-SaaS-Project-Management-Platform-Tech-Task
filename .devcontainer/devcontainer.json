@@ -1,0 +1,15 @@
+{
+  "name": "Tech Task (Docker-in-Docker + Node)",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/node:1": { "version": "24" },
+    "ghcr.io/devcontainers/features/python:1": { "version": "3.12" }
+  },
+  "forwardPorts": [5173, 8000],
+  "portsAttributes": {
+    "5173": { "label": "Tech Task (web)" },
+    "8000": { "label": "Django API" }
+  },
+  "postCreateCommand": "echo 'Ready. Run: bash scripts/first_run.sh'"
+}
