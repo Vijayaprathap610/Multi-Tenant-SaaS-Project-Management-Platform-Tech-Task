@@ -1,9 +1,16 @@
- ✓ src/kanban/logic.test.js (6 tests)
- ✓ src/test/auth.test.jsx (4 tests)
- ✓ src/test/board.test.jsx (8 tests)
+> tech-task-frontend@0.1.0 test
+> vitest run
+
+ RUN  v4.1.12 E:/tech-task/frontend
+
+ ✓ src/kanban/logic.test.js (10 tests) 11ms
+ ✓ src/test/board.test.jsx (3 tests) 358ms
+ ✓ src/test/auth.test.jsx (8 tests) 2214ms
+     ✓ shows the server's generic message when credentials are wrong
+     ✓ signs in and goes to the app
+     ✓ rejects mismatched passwords without calling the API
+     ✓ shows server validation errors
 
  Test Files  3 passed (3)
-      Tests  18 passed (18)
-   Start at  22:30:00
-   Duration  1.42s (transform 120ms, setup 85ms, collect 310ms, tests 290ms, environment 410ms, prepare 205ms)
-
+      Tests  21 passed (21)
+   Duration  6.60s (transform 376ms, setup 1.11s, import 3.69s, tests 2.58s, environment 5.53s)

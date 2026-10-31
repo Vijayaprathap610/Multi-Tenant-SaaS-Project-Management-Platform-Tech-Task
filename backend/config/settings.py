@@ -4,10 +4,33 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
-# Fails loudly if missing: no default secret, ever.
-SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
-ALLOWED_HOSTS = [h for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h]
+
+def _load_env_file(path):
+    if not os.path.exists(path):
+        return
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+    except OSError:
+        pass
+
+
+for _env_path in (BASE_DIR.parent / ".env", BASE_DIR / ".env"):
+    _load_env_file(_env_path)
+
+DEBUG = os.environ.get("DJANGO_DEBUG", "true" if ("runserver" in sys.argv or "test" in sys.argv) else "false").lower() == "true"
+# Fails loudly in production if missing; falls back to dev secret in local debug/testing.
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY") or ("insecure-dev-secret-key-change-in-production" if DEBUG else None)
+if not SECRET_KEY:
+    raise KeyError("DJANGO_SECRET_KEY environment variable is required when DEBUG is False.")
+
+_hosts = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0" if DEBUG else "")
+ALLOWED_HOSTS = [h.strip() for h in _hosts.split(",") if h.strip()]
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -57,14 +80,24 @@ TEMPLATES = [{
     ]},
 }]
 
-DATABASES = {"default": {
-    "ENGINE": "django.db.backends.postgresql",
-    "NAME": os.environ["POSTGRES_DB"],
-    "USER": os.environ["POSTGRES_USER"],
-    "PASSWORD": os.environ["POSTGRES_PASSWORD"],
-    "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
-    "PORT": os.environ.get("POSTGRES_PORT", "5432"),
-}}
+if os.environ.get("USE_SQLITE", "false").lower() == "true" or os.environ.get("DB_ENGINE") == "django.db.backends.sqlite3":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("POSTGRES_DB", "techtask"),
+            "USER": os.environ.get("POSTGRES_USER", "postgres"),
+            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
+            "HOST": os.environ.get("POSTGRES_HOST", "localhost"),
+            "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        }
+    }
 
 AUTH_USER_MODEL = "accounts.User"
 AUTH_PASSWORD_VALIDATORS = [

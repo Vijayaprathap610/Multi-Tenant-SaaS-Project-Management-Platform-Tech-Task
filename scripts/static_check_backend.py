@@ -1,7 +1,7 @@
 """Offline sanity check (no dependencies needed). Run from backend/: python ../scripts/static_check_backend.py"""
 import ast, builtins, os, re, sys
 ROOT = "."
-files = [os.path.join(d, f) for d, _, fs in os.walk(ROOT) for f in fs if f.endswith(".py") and "migrations" not in d]
+files = [os.path.join(d, f) for d, _, fs in os.walk(ROOT) for f in fs if f.endswith(".py") and "migrations" not in d and "venv" not in d]
 trees = {f: ast.parse(open(f, encoding="utf-8").read(), f) for f in files}
 
 def modname(path):

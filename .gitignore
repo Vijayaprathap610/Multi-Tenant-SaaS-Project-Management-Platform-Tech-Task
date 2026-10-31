@@ -4,3 +4,9 @@ __pycache__/
 node_modules/
 media/
 .venv/
+*/.venv/
+dist/
+frontend/dist/
+*.sqlite3
+*.sqlite3-journal
+package-lock.backup.json

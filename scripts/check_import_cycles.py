@@ -1,6 +1,6 @@
 """Detect top-level circular imports. Run from backend/: python ../scripts/check_import_cycles.py"""
 import ast, os, sys
-files = [os.path.join(d, f) for d, _, fs in os.walk(".") for f in fs if f.endswith(".py") and "migrations" not in d and "tests" not in f and "test_" not in f]
+files = [os.path.join(d, f) for d, _, fs in os.walk(".") for f in fs if f.endswith(".py") and "migrations" not in d and "tests" not in f and "test_" not in f and "venv" not in d]
 def modname(p):
     m = p[2:-3].replace("\\", "/").replace("/", "."); return m[:-9] if m.endswith(".__init__") else m
 mods = {modname(f): f for f in files}
