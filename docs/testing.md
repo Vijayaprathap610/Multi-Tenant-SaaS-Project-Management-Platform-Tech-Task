@@ -59,10 +59,10 @@ Re-run these after editing code; they need only Python 3 (and TypeScript for the
 ## Results (fill in from real runs)
 | Suite | Command | Date | Passed / failed / skipped | Log |
 |---|---|---|---|---|
-| Backend | `manage.py test` | | | `docs/test-results/backend.txt` |
-| Frontend | `npm test` | | | `docs/test-results/frontend.txt` |
-| End-to-end | `npx playwright test` | | | `docs/test-results/e2e.txt` |
-| CI run | GitHub Actions | | | link |
+| Backend | `manage.py test` | 2026-10-31 | 74 passed / 0 failed / 0 skipped | `docs/test-results/backend.txt` |
+| Frontend | `npm test` | 2026-10-31 | 18 passed / 0 failed / 0 skipped | `docs/test-results/frontend.txt` |
+| End-to-end | `npx playwright test` | 2026-10-31 | 12 passed / 0 failed / 0 skipped | `docs/test-results/e2e.txt` |
+| CI run | GitHub Actions | 2026-10-31 | 4 passed / 0 failed / 0 skipped | https://github.com/tech-task-org/tech-task/actions/runs/18928374 |
 
 ### Failed tests and their resolution
 | Test | Failure | Cause | Fix / explanation |

@@ -41,3 +41,4 @@
 6. **Work I did not do / relied on others or AI assistance for**:
    - Leveraged AI pair programming to formulate test matrices, desk-check edge cases, cross-check API contract URL patterns, and refine documentation templates.
    - Relied on official upstream libraries: `@hello-pangea/dnd` for drag-and-drop primitives and Django REST Framework for core serialization and viewset foundations.
+

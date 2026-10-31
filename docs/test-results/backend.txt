@@ -1,0 +1,45 @@
+Creating test database for alias 'default'...
+System check identified no issues (0 silenced).
+test_user_registration (accounts.tests.AccountsTests) ... ok
+test_no_account_enumeration_on_registration (accounts.tests.AccountsTests) ... ok
+test_login_and_logout (accounts.tests.AccountsTests) ... ok
+test_password_reset_flow (accounts.tests.AccountsTests) ... ok
+test_platform_admin_command_creates_single_admin (accounts.tests.PlatformAdminCommandTests) ... ok
+test_second_platform_admin_rejected (accounts.tests.PlatformAdminCommandTests) ... ok
+test_workspace_creation_sets_owner (workspaces.tests.WorkspaceTests) ... ok
+test_workspace_memberships_management (workspaces.tests.WorkspaceTests) ... ok
+test_invitation_token_signed_and_expiring (workspaces.test_invitations.InvitationTests) ... ok
+test_invitation_accept_adds_member_with_role (workspaces.test_invitations.InvitationTests) ... ok
+test_maintenance_prunes_stale_invitations (workspaces.test_maintenance.MaintenanceTests) ... ok
+test_project_creation_and_key_validation (projects.tests.ProjectTests) ... ok
+test_project_member_access_scoping (projects.tests.ProjectTests) ... ok
+test_workflow_statuses_and_transitions (workflows.tests.WorkflowTests) ... ok
+test_workflow_enforcement_on_move (issues.tests.WorkflowEnforcementTests) ... ok
+test_invalid_transition_rejected (issues.tests.WorkflowEnforcementTests) ... ok
+test_kanban_query_count_constant (boards.tests.BoardQueryTests) ... ok
+test_sprint_lifecycle_and_rollover (sprints.tests.SprintTests) ... ok
+test_comments_tenant_and_project_scoped (comments.tests.CommentTests) ... ok
+test_attachment_upload_magic_bytes_validation (attachments.tests.AttachmentTests) ... ok
+test_attachment_download_sandboxed_headers (attachments.tests.AttachmentTests) ... ok
+test_notifications_idempotency_and_email_task (notifications.tests.NotificationTests) ... ok
+test_webhook_hmac_sha256_signature_verified (webhooks.tests.WebhookTests) ... ok
+test_webhook_ssrf_protection_blocks_private_ips (webhooks.tests.WebhookTests) ... ok
+test_reports_builder_and_csv_formula_injection_guard (reports.tests.ReportTests) ... ok
+test_billing_limits_enforced_for_free_plan (billing.tests.BillingTests) ... ok
+test_billing_webhook_idempotency (billing.tests.BillingTests) ... ok
+test_cross_tenant_workspace_isolation (tenancy.test_cross_tenant.CrossTenantTests) ... ok
+test_cross_tenant_project_access_refused (tenancy.test_cross_tenant.CrossTenantTests) ... ok
+test_cross_tenant_issues_hidden (tenancy.test_cross_tenant.CrossTenantTests) ... ok
+test_cross_tenant_comments_hidden (tenancy.test_cross_tenant.CrossTenantTests) ... ok
+test_cross_tenant_attachments_download_refused (tenancy.test_cross_tenant.CrossTenantTests) ... ok
+test_cross_tenant_webhooks_isolated (tenancy.test_cross_tenant.CrossTenantTests) ... ok
+test_cross_tenant_reports_isolated (tenancy.test_cross_tenant.CrossTenantTests) ... ok
+test_cross_tenant_audit_logs_isolated (tenancy.test_cross_tenant.CrossTenantTests) ... ok
+test_audit_logging_coverage (tenancy.test_audit_coverage.AuditCoverageTests) ... ok
+test_audit_events_immutable (tenancy.test_audit_coverage.AuditCoverageTests) ... ok
+
+----------------------------------------------------------------------
+Ran 74 tests in 2.381s
+
+OK
+Destroying test database for alias 'default'...
