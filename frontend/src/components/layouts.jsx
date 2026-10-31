@@ -95,7 +95,7 @@ export function AppLayout() {
       <Container fluid className="py-3">
         <div className="row g-3">
           <nav className="col-md-2" aria-label="Workspace">
-            <NavLink end to="/app" className={link}>Projects</NavLink>
+            <NavLink end to="/app" className={link}>Dashboard</NavLink>
             <NavLink to="/app/notifications" className={link}>Notifications</NavLink>
             {can(["owner", "admin"]) && <NavLink to="/app/settings" className={link}>Workspace settings</NavLink>}
             {can(["owner", "admin"]) && <NavLink to="/app/billing" className={link}>Billing</NavLink>}
