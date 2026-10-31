@@ -1,0 +1,9 @@
+# Constraints below were checked against official sources on 2026-10-29 (see docs/versions.md).
+# Everything not constrained here is NOT yet verified: after reviewing, run `pip-compile` to produce a pinned lock file.
+Django>=6.1.2,<6.2
+djangorestframework>=3.18.3,<3.19
+celery>=5.5,<6
+psycopg[binary]>=3.1.12
+redis
+gunicorn
+stripe
