@@ -1,0 +1,13 @@
+flowchart TB
+  E["Domain event (issue moved, comment added, sprint started ...)"] --> OC["transaction.on_commit"]
+  OC --> N["notify_event task"]
+  OC --> D["dispatch_event task"]
+  N --> N1["Re-check issue belongs to workspace; recipients still have project access"]
+  N1 --> N2["Notification row (unique per recipient+event) + email"]
+  D --> D1["Endpoints of THIS workspace subscribed to the event"]
+  D1 --> D2["WebhookDelivery (unique per endpoint+event)"]
+  D2 --> D3["deliver_webhook: re-validate URL (SSRF), sign HMAC-SHA256, POST, 10s timeout"]
+  D3 -->|"2xx"| OK["success"]
+  D3 -->|"error / non-2xx"| RT["retry with backoff, max 5 attempts"]
+  RT --> D3
+  RT -->|"attempts exhausted"| F["failed (kept for inspection)"]

@@ -1,0 +1,12 @@
+sequenceDiagram
+  participant U as Browser
+  participant A as API
+  U->>A: GET /api/auth/csrf/
+  A-->>U: Set-Cookie csrftoken
+  U->>A: POST /api/auth/login/ (X-CSRFToken)
+  A->>A: authenticate, rotate session key, audit
+  A-->>U: Set-Cookie sessionid (HttpOnly) + user and memberships
+  U->>A: any request (cookie + CSRF header on writes)
+  A->>A: SessionAuthentication, then membership + role + object checks
+  U->>A: POST /api/auth/logout/
+  A-->>U: session destroyed

@@ -1,0 +1,32 @@
+flowchart TB
+  SPA["Browser: React SPA<br/>(Vite, React Bootstrap, @hello-pangea/dnd)"]
+  NG["nginx container<br/>static files + /api proxy"]
+  subgraph APP["Application tier (Django containers)"]
+    direction LR
+    API["REST API<br/>Django REST Framework + gunicorn"]
+    W["Celery worker<br/>notifications, reports, webhook delivery"]
+    B["Celery beat<br/>nightly maintenance"]
+  end
+  subgraph DATA["Data tier"]
+    direction LR
+    DB[("PostgreSQL<br/>shared schema, workspace_id on every tenant table")]
+    R[("Redis<br/>Celery broker")]
+    FS[("Private media volume<br/>attachments")]
+  end
+  subgraph EXT["External services"]
+    direction LR
+    STRIPE["Stripe (test mode)"]
+    HOOK["Customer webhook endpoints"]
+    MAIL["Email (SMTP; console in dev)"]
+  end
+  SPA -->|"session cookie + CSRF header"| NG
+  NG --> API
+  API --> DB
+  API --> FS
+  API -->|"enqueue tasks"| R
+  B -->|"schedule"| R
+  R --> W
+  W --> DB
+  API <-->|"Checkout, Portal, signed webhooks"| STRIPE
+  W -->|"HMAC-signed POST, retries"| HOOK
+  W --> MAIL

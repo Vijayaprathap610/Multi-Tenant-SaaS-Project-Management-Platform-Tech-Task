@@ -1,0 +1,51 @@
+erDiagram
+  USER ||--o{ MEMBERSHIP : has
+  WORKSPACE ||--o{ MEMBERSHIP : has
+  WORKSPACE ||--o{ INVITATION : issues
+  WORKSPACE ||--o| SUBSCRIPTION : "billed via"
+  WORKSPACE ||--o{ PROJECT : owns
+  WORKSPACE ||--o{ WEBHOOK_ENDPOINT : configures
+  WORKSPACE ||--o{ AUDIT_EVENT : records
+  WORKSPACE ||--o{ NOTIFICATION : scopes
+  PROJECT ||--o{ PROJECT_MEMBER : has
+  USER ||--o{ PROJECT_MEMBER : joins
+  PROJECT ||--o{ WORKFLOW_STATUS : defines
+  PROJECT ||--o{ WORKFLOW_TRANSITION : allows
+  WORKFLOW_STATUS ||--o{ WORKFLOW_TRANSITION : "from / to"
+  PROJECT ||--o{ BOARD : has
+  BOARD ||--o{ BOARD_COLUMN : has
+  WORKFLOW_STATUS ||--o{ BOARD_COLUMN : "shown in"
+  PROJECT ||--o{ SPRINT : plans
+  PROJECT ||--o{ ISSUE : contains
+  WORKFLOW_STATUS ||--o{ ISSUE : "current status"
+  SPRINT |o--o{ ISSUE : groups
+  USER |o--o{ ISSUE : "assignee / reporter"
+  ISSUE ||--o{ COMMENT : has
+  ISSUE ||--o{ ATTACHMENT : has
+  PROJECT ||--o{ REPORT : generates
+  WEBHOOK_ENDPOINT ||--o{ WEBHOOK_DELIVERY : logs
+  USER ||--o{ NOTIFICATION : receives
+  SUBSCRIPTION ||--o{ STRIPE_EVENT : "processed ids (global)"
+  WORKSPACE { uuid id PK
+    string name
+    string slug UK }
+  MEMBERSHIP { uuid id PK
+    uuid workspace_id FK
+    int user_id FK
+    string role "owner|admin|project_manager|member" }
+  PROJECT { uuid id PK
+    uuid workspace_id FK
+    string key "unique per workspace"
+    string status
+    int issue_counter }
+  ISSUE { uuid id PK
+    uuid workspace_id FK
+    uuid project_id FK
+    int number "unique per project"
+    uuid status_id FK
+    string priority
+    float position
+    uuid sprint_id FK }
+  SPRINT { uuid id PK
+    uuid project_id FK
+    string status "one active per project (partial unique)" }

@@ -1,0 +1,21 @@
+sequenceDiagram
+  participant C as Client (user of Tenant A)
+  participant V as DRF view (TenantScopedMixin / ProjectScopedMixin)
+  participant P as WorkspaceMembershipPermission
+  participant D as PostgreSQL
+  C->>V: GET /api/workspaces/{ws}/projects/{p}/issues/
+  V->>P: has_permission(request)
+  P->>D: Membership WHERE user = session user AND workspace = {ws}
+  alt no membership
+    P-->>C: 404 (existence not revealed)
+  else membership found
+    P->>P: role allowed for this HTTP method? (else 403)
+    P->>D: Project WHERE id = {p} AND workspace = membership.workspace
+    alt project missing / no project access
+      P-->>C: 404
+    else ok
+      V->>D: Issues WHERE workspace = membership.workspace AND project = {p}
+      D-->>C: only Tenant A rows
+    end
+  end
+  Note over C,D: Client-supplied tenant ids are never trusted: the workspace is re-derived from the session user's membership on every request. Body ids (status, sprint, assignee...) are validated against the same project.
