@@ -1,0 +1,98 @@
+# Action versions are the Node 24 majors (Node 20 actions were deprecated 2026-06-16); image tags still to verify (docs/versions.md).
+name: CI
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: {POSTGRES_DB: techtask, POSTGRES_USER: techtask, POSTGRES_PASSWORD: ci-password}
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U techtask" --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DJANGO_SECRET_KEY: ci-only-not-a-secret
+      DJANGO_DEBUG: "true"
+      POSTGRES_DB: techtask
+      POSTGRES_USER: techtask
+      POSTGRES_PASSWORD: ci-password
+      POSTGRES_HOST: localhost
+      MEDIA_ROOT: /tmp/media
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with: {python-version: "3.12"}
+      - run: pip install -r backend/requirements.in ruff pip-audit
+      - name: Lint (syntax errors and undefined names)
+        run: ruff check --select E9,F63,F7,F82 backend
+      - name: Frontend/backend API contract
+        run: python scripts/check_api_contract.py
+      - name: Migrations are committed
+        run: python backend/manage.py makemigrations --check --dry-run
+      - name: Tests
+        run: python backend/manage.py test --verbosity 2 2>&1 | tee backend-test-results.txt
+      - name: Dependency audit
+        run: pip-audit -r backend/requirements.in || true   # report only; review findings
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: {name: backend-test-results, path: backend-test-results.txt}
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults: {run: {working-directory: frontend}}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: {node-version: 24, cache: npm, cache-dependency-path: frontend/package-lock.json}
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: npm run build
+      - run: npm audit --audit-level=high || true   # report only; review findings
+
+  docker:
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: docker build -t techtask-backend backend
+      - run: docker build -t techtask-frontend frontend
+
+  e2e:
+    needs: [docker]
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Start stack
+        run: |
+          cp .env.example .env
+          sed -i 's/^DJANGO_SECRET_KEY=.*/DJANGO_SECRET_KEY=ci-only-not-a-secret/; s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=ci-password/' .env
+          docker compose up -d --build --wait db redis backend frontend
+      - uses: actions/setup-node@v6
+        with: {node-version: 24}
+      - run: cd frontend && npm ci --ignore-scripts && npx playwright install --with-deps chromium && npx playwright test
+      - if: failure()
+        run: docker compose logs
+
+  deploy:
+    needs: [backend, frontend, docker]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v6
+      - name: Deploy over SSH (activates only once DEPLOY_* secrets exist; see docs/deployment.md)
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          if [ -z "$DEPLOY_HOST" ] || [ -z "$DEPLOY_KEY" ]; then echo "Deployment secrets not configured; skipping."; exit 0; fi
+          install -m 600 /dev/null key && printf '%s\n' "$DEPLOY_KEY" > key
+          ssh -i key -o StrictHostKeyChecking=accept-new "$DEPLOY_USER@$DEPLOY_HOST" \
+            "cd /opt/techtask && git pull --ff-only && docker compose -f docker-compose.yml up -d --build"
