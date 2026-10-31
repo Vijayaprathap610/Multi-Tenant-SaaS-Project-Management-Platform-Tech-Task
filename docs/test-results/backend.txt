@@ -43,3 +43,4 @@ Ran 74 tests in 2.381s
 
 OK
 Destroying test database for alias 'default'...
+

@@ -7,3 +7,4 @@ Running 12 tests using 4 workers
   ✓ [chromium] › e2e/kanban.spec.js:65:1 › keyboard accessible card movement (980ms)
 
   12 passed (6.8s)
+
