@@ -63,11 +63,14 @@ def _credential_login(request, *, platform_admin):
     s.is_valid(raise_exception=True)
     user = authenticate(request, username=s.validated_data["email"].strip().lower(),
                         password=s.validated_data["password"])
-    if user is None or user.is_platform_admin != platform_admin:
+    if user is None:
         record("platform_admin.login_failed" if platform_admin else "auth.login_failed")
         return None
+    if platform_admin and not user.is_platform_admin:
+        record("platform_admin.login_failed")
+        return None
     login(request, user)  # rotates the session key
-    record("platform_admin.login" if platform_admin else "auth.login", actor=user)
+    record("platform_admin.login" if user.is_platform_admin else "auth.login", actor=user)
     return user
 
 
@@ -91,7 +94,7 @@ class LogoutView(APIView):
 class MeView(APIView):
     def get(self, request):
         if request.user.is_platform_admin:
-            return Response({"detail": "Not found."}, status=404)
+            return Response({"id": request.user.id, "email": request.user.email, "is_platform_admin": True, "memberships": []})
         return Response(MeSerializer(request.user).data)
 
     def patch(self, request):
@@ -104,6 +107,12 @@ class MeView(APIView):
         if "last_name" in request.data:
             request.user.last_name = str(request.data["last_name"])[:150]
             updates.append("last_name")
+        if "designation" in request.data:
+            request.user.designation = str(request.data["designation"])[:100]
+            updates.append("designation")
+        if "contact_number" in request.data:
+            request.user.contact_number = str(request.data["contact_number"])[:30]
+            updates.append("contact_number")
         if updates:
             request.user.save(update_fields=updates)
         return Response(MeSerializer(request.user).data)

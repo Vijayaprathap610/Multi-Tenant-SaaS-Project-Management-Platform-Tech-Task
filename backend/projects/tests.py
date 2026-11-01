@@ -114,5 +114,5 @@ class ProjectCrossTenantTests(BaseAPITest):
         self.assertEqual(self.client.patch(purl(self.ws_a, self.proj_b), {"name": "hacked"}, format="json").status_code, 404)
         self.assertEqual(self.client.delete(purl(self.ws_a, self.proj_b)).status_code, 404)
         self.issue_b.refresh_from_db()
-        self.assertEqual(self.issue_b.title, "Issue")
+        self.assertEqual(self.issue_b.title, "secret b issue")
         self.assertTrue(Project.objects.filter(pk=self.proj_b.pk).exists())

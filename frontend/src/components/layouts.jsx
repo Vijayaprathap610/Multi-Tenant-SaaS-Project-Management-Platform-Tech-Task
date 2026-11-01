@@ -50,6 +50,7 @@ export function AppLayout() {
   const { user, logout } = useAuth();
   const { memberships, workspace, setActive, can } = useWorkspace();
   const navigate = useNavigate();
+  const location = useLocation();
 
   if (!workspace) return <Navigate to="/onboarding" replace />;
 
@@ -95,7 +96,21 @@ export function AppLayout() {
       <Container fluid className="py-3">
         <div className="row g-3">
           <nav className="col-md-2" aria-label="Workspace">
-            <NavLink end to="/app" className={link}>Dashboard</NavLink>
+            <NavLink
+              end
+              to="/app"
+              className={() => `tt-sidebar-link${location.pathname === "/app" && !location.search.includes("tab=team") ? " active" : ""}`}
+            >
+              Dashboard
+            </NavLink>
+            {can(["owner", "admin", "project_manager"]) && (
+              <NavLink
+                to="/app?tab=team"
+                className={() => `tt-sidebar-link${location.pathname === "/app" && location.search.includes("tab=team") ? " active" : ""}`}
+              >
+                Team Management
+              </NavLink>
+            )}
             <NavLink to="/app/notifications" className={link}>Notifications</NavLink>
             {can(["owner", "admin"]) && <NavLink to="/app/settings" className={link}>Workspace settings</NavLink>}
             {can(["owner", "admin"]) && <NavLink to="/app/billing" className={link}>Billing</NavLink>}

@@ -22,6 +22,33 @@ def send_invitation_email(invitation_id):
     )
 
 
+@shared_task(autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
+def send_member_welcome_email(membership_id):
+    from .models import Membership
+
+    membership = Membership.objects.select_related("workspace", "user").filter(pk=membership_id).first()
+    if membership is None:
+        return
+    user = membership.user
+    ws = membership.workspace
+    role_display = membership.get_role_display()
+    login_url = f"{settings.FRONTEND_URL}/login"
+    reset_url = f"{settings.FRONTEND_URL}/forgot-password"
+
+    subject = f"Welcome to {ws.name} on Tech Task - Account Created"
+    message = (
+        f"Hello {user.first_name or user.email},\n\n"
+        f"Your account has been created for company '{ws.name}' on Tech Task with the role of {role_display}.\n\n"
+        f"Company: {ws.name}\n"
+        f"Role: {role_display}\n"
+        f"Designation: {membership.designation or 'Not specified'}\n\n"
+        f"You can log in to your account here:\n{login_url}\n\n"
+        f"If you need to set or reset your password, please use the secure password recovery link:\n{reset_url}\n\n"
+        f"Best regards,\nTech Task Team\n"
+    )
+    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
+
+
 @shared_task
 def prune_invitations(days=30):
     """Scheduled maintenance: delete invitations that expired, were revoked or were accepted long ago."""

@@ -28,14 +28,14 @@ export function EmptyState({ title, children }) {
   );
 }
 
-export function ConfirmModal({ show, title, body, confirmLabel = "Delete", onConfirm, onCancel, busy }) {
+export function ConfirmModal({ show, title, body, confirmLabel = "Delete", confirmVariant = "danger", onConfirm, onCancel, busy }) {
   return (
     <Modal show={show} onHide={onCancel} centered>
       <Modal.Header closeButton><Modal.Title as="h2" className="h5">{title}</Modal.Title></Modal.Header>
       <Modal.Body>{body}</Modal.Body>
       <Modal.Footer>
         <Button variant="outline-secondary" onClick={onCancel}>Cancel</Button>
-        <Button variant="danger" onClick={onConfirm} disabled={busy}>{busy ? "Working…" : confirmLabel}</Button>
+        <Button variant={confirmVariant} onClick={onConfirm} disabled={busy}>{busy ? "Working…" : confirmLabel}</Button>
       </Modal.Footer>
     </Modal>
   );

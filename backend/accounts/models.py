@@ -29,6 +29,8 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     # Never exposed by any serializer; set only by create_platform_admin.
     is_platform_admin = models.BooleanField(default=False, editable=False)
+    designation = models.CharField(max_length=100, blank=True, default="")
+    contact_number = models.CharField(max_length=30, blank=True, default="")
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

@@ -59,7 +59,10 @@ class LoginTests(BaseAPITest):
         self.assertEqual(r.status_code, 200)
         stats = self.client.get("/api/platform-admin/stats/")
         self.assertEqual(stats.status_code, 200)
-        self.assertEqual(set(stats.json()), {"total_users", "total_workspaces", "total_memberships"})
+        self.assertEqual(
+    set(stats.json()),
+    {"total_users", "total_workspaces", "total_memberships", "subscriptions"},
+)
 
     def test_ordinary_user_cannot_read_platform_stats(self):
         self.client.force_authenticate(self.user)

@@ -9,4 +9,5 @@ dist/
 frontend/dist/
 *.sqlite3
 *.sqlite3-journal
+celerybeat-schedule*
 package-lock.backup.json

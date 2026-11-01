@@ -37,7 +37,11 @@ export function Login() {
     setBusy(true);
     try {
       const u = await login(email.trim(), password);
-      navigate(next || (u.memberships.length ? "/app" : "/onboarding"), { replace: true });
+      if (u.is_platform_admin) {
+        navigate("/platform-admin", { replace: true });
+      } else {
+        navigate(next || (u.memberships?.length ? "/app" : "/onboarding"), { replace: true });
+      }
     } catch (err) {
       setError(errorMessage(err));
       setBusy(false);

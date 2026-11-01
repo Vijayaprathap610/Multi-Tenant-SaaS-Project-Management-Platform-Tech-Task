@@ -32,6 +32,9 @@ class Membership(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                              related_name="memberships")
     role = models.CharField(max_length=20, choices=Role.choices)
+    designation = models.CharField(max_length=100, blank=True, default="")
+    contact_number = models.CharField(max_length=30, blank=True, default="")
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

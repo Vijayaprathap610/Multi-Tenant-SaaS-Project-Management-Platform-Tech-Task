@@ -8,6 +8,8 @@ export default function ProfilePage() {
   const { user, refresh } = useAuth();
   const [firstName, setFirstName] = useState(user.first_name || "");
   const [lastName, setLastName] = useState(user.last_name || "");
+  const [designation, setDesignation] = useState(user.designation || "");
+  const [contactNumber, setContactNumber] = useState(user.contact_number || "");
   const [pw, setPw] = useState({ current_password: "", new_password: "" });
   const [msg, setMsg] = useState({});
   const [errors, setErrors] = useState({});
@@ -15,7 +17,12 @@ export default function ProfilePage() {
   const saveName = async (e) => {
     e.preventDefault();
     try {
-      await api.patch("/auth/me/", { first_name: firstName, last_name: lastName });
+      await api.patch("/auth/me/", {
+        first_name: firstName,
+        last_name: lastName,
+        designation,
+        contact_number: contactNumber,
+      });
       await refresh();
       setMsg({ profile: "Profile saved." });
     } catch (err) {
@@ -48,6 +55,26 @@ export default function ProfilePage() {
             <Form.Group className="col-md-6" controlId="last-name">
               <Form.Label>Last name</Form.Label>
               <Form.Control value={lastName} onChange={(e) => setLastName(e.target.value)} maxLength={150} />
+            </Form.Group>
+          </div>
+          <div className="row g-3 mb-3">
+            <Form.Group className="col-md-6" controlId="designation">
+              <Form.Label>Designation / Job Title</Form.Label>
+              <Form.Control
+                value={designation}
+                onChange={(e) => setDesignation(e.target.value)}
+                maxLength={100}
+                placeholder="e.g. Senior Project Manager, Lead Engineer"
+              />
+            </Form.Group>
+            <Form.Group className="col-md-6" controlId="contact-number">
+              <Form.Label>Contact Number</Form.Label>
+              <Form.Control
+                value={contactNumber}
+                onChange={(e) => setContactNumber(e.target.value)}
+                maxLength={30}
+                placeholder="e.g. +1 555-0199"
+              />
             </Form.Group>
           </div>
           <Button type="submit">Save profile</Button>

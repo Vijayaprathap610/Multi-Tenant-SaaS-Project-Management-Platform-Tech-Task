@@ -34,15 +34,17 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
 class MeSerializer(serializers.ModelSerializer):
     memberships = serializers.SerializerMethodField()
+    is_platform_admin = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "last_name", "memberships"]
+        fields = ["id", "email", "first_name", "last_name", "designation", "contact_number", "is_platform_admin", "memberships"]
         read_only_fields = fields
 
     def get_memberships(self, user):
         return [{"workspace_id": str(m.workspace_id), "workspace_name": m.workspace.name,
-                 "role": m.role}
+                 "role": m.role, "designation": m.designation, "contact_number": m.contact_number,
+                 "is_active": m.is_active}
                 for m in user.memberships.select_related("workspace").order_by("workspace__name")]
 
 

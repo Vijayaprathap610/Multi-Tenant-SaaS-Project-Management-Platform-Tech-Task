@@ -102,7 +102,7 @@ class MemberManagementTests(BaseAPITest):
     def test_member_and_pm_cannot_manage_members(self):
         for user in (self.member, self.pm):
             self.client.force_authenticate(user)
-            self.assertEqual(self.client.patch(self.url("pm"), {"role": "admin"}, format="json").status_code, 403)
+            self.assertEqual(self.client.patch(self.url("project_manager"), {"role": "admin"}, format="json").status_code, 403)
 
     def test_last_owner_is_protected(self):
         self.client.force_authenticate(self.owner)

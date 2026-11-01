@@ -26,12 +26,55 @@ class WorkspaceSerializer(serializers.ModelSerializer):
 
 
 class MemberSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source="user.id", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
+    first_name = serializers.CharField(source="user.first_name", read_only=True)
+    last_name = serializers.CharField(source="user.last_name", read_only=True)
+    full_name = serializers.SerializerMethodField()
+    assigned_projects = serializers.SerializerMethodField()
 
     class Meta:
         model = Membership
-        fields = ["id", "email", "role", "created_at"]
-        read_only_fields = fields
+        fields = [
+            "id", "user_id", "email", "first_name", "last_name", "full_name",
+            "role", "designation", "contact_number", "is_active", "assigned_projects", "created_at"
+        ]
+        read_only_fields = ["id", "user_id", "email", "first_name", "last_name", "full_name", "created_at"]
+
+    def get_full_name(self, obj):
+        name = f"{obj.user.first_name} {obj.user.last_name}".strip()
+        return name or obj.user.email.split("@")[0]
+
+    def get_assigned_projects(self, obj):
+        return [
+            {"id": str(pm.project.id), "name": pm.project.name, "key": pm.project.key}
+            for pm in obj.user.project_memberships.filter(workspace_id=obj.workspace_id).select_related("project")
+        ]
+
+
+class CreateMemberSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    full_name = serializers.CharField(max_length=200, required=False, allow_blank=True)
+    first_name = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    last_name = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    password = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    role = serializers.ChoiceField(choices=[Role.PROJECT_MANAGER.value, Role.MEMBER.value])
+    designation = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    contact_number = serializers.CharField(max_length=30, required=False, allow_blank=True)
+    project_id = serializers.UUIDField(required=False, allow_null=True)
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+
+class MemberUpdateSerializer(serializers.Serializer):
+    role = serializers.ChoiceField(choices=Role.choices, required=False)
+    designation = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    contact_number = serializers.CharField(max_length=30, required=False, allow_blank=True)
+    is_active = serializers.BooleanField(required=False)
+    first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    project_ids = serializers.ListField(child=serializers.UUIDField(), required=False)
 
 
 class RoleChangeSerializer(serializers.Serializer):

@@ -1,5 +1,7 @@
+import secrets
 from datetime import timedelta
 
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import OuterRef, Subquery
 from django.shortcuts import get_object_or_404
@@ -13,13 +15,17 @@ from rest_framework.views import APIView
 
 from audit.services import record
 from billing.services import enforce_limit
+from projects.models import Project, ProjectMember
 from tenancy.mixins import TenantScopedMixin
 
 from .invites import resolve
 from .models import ALL_ROLES, MANAGE_ROLES, Invitation, Membership, Role, Workspace
-from .serializers import (AcceptInvitationSerializer, InvitationSerializer, MemberSerializer,
-                          RoleChangeSerializer, WorkspaceSerializer)
-from .tasks import send_invitation_email
+from .serializers import (AcceptInvitationSerializer, CreateMemberSerializer, InvitationSerializer,
+                          MemberSerializer, MemberUpdateSerializer, RoleChangeSerializer, WorkspaceSerializer)
+from .tasks import send_invitation_email, send_member_welcome_email
+
+User = get_user_model()
+PM_UP = MANAGE_ROLES | {Role.PROJECT_MANAGER.value}
 
 
 class CanEditWorkspace(BasePermission):
@@ -49,21 +55,123 @@ class WorkspaceViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                metadata={"fields": sorted(serializer.validated_data)})
 
 
-class MemberListView(TenantScopedMixin, ListAPIView):
+class MemberListView(TenantScopedMixin, ListCreateAPIView):
     serializer_class = MemberSerializer
     queryset = Membership.objects.select_related("user").order_by("created_at")
-    required_roles = {"GET": ALL_ROLES}
+    required_roles = {"GET": ALL_ROLES, "POST": PM_UP}
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        role = self.request.query_params.get("role")
+        if role:
+            qs = qs.filter(role=role)
+        is_active = self.request.query_params.get("is_active")
+        if is_active in ("true", "1"):
+            qs = qs.filter(is_active=True)
+        elif is_active in ("false", "0"):
+            qs = qs.filter(is_active=False)
+        return qs
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        s = CreateMemberSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        ws = request.membership.workspace
+        actor_role = request.membership.role
+        target_role = d["role"]
+
+        if actor_role == Role.PROJECT_MANAGER.value and target_role != Role.MEMBER.value:
+            raise PermissionDenied("Project Managers can only create Team Members.")
+
+        email = d["email"]
+        if Membership.objects.filter(workspace=ws, user__email__iexact=email).exists():
+            raise ValidationError({"email": "This person is already a member of this company."})
+
+        full_name = d.get("full_name", "").strip()
+        fn = d.get("first_name", "").strip()
+        ln = d.get("last_name", "").strip()
+        if full_name and not fn:
+            parts = full_name.split(" ", 1)
+            fn = parts[0]
+            ln = parts[1] if len(parts) > 1 else ""
+
+        designation = d.get("designation", "").strip()
+        contact_number = d.get("contact_number", "").strip()
+        password = d.get("password") or secrets.token_urlsafe(16)
+
+        user = User.objects.filter(email__iexact=email).first()
+        if user is None:
+            user = User.objects.create_user(
+                email=email,
+                password=password,
+                first_name=fn,
+                last_name=ln,
+                designation=designation,
+                contact_number=contact_number,
+            )
+        else:
+            updates = []
+            if fn and not user.first_name:
+                user.first_name = fn
+                updates.append("first_name")
+            if ln and not user.last_name:
+                user.last_name = ln
+                updates.append("last_name")
+            if designation and not user.designation:
+                user.designation = designation
+                updates.append("designation")
+            if contact_number and not user.contact_number:
+                user.contact_number = contact_number
+                updates.append("contact_number")
+            if updates:
+                user.save(update_fields=updates)
+
+        enforce_limit(ws, "members")
+
+        membership = Membership.objects.create(
+            workspace=ws,
+            user=user,
+            role=target_role,
+            designation=designation,
+            contact_number=contact_number,
+            is_active=True,
+        )
+
+        project_id = d.get("project_id")
+        if project_id:
+            project = get_object_or_404(Project, pk=project_id, workspace=ws)
+            if actor_role == Role.PROJECT_MANAGER.value:
+                if not ProjectMember.objects.filter(project=project, user=request.user).exists():
+                    raise PermissionDenied("You can only assign members to projects you belong to.")
+            ProjectMember.objects.get_or_create(workspace=ws, project=project, user=user)
+
+        record("membership.created", actor=request.user, workspace=ws, resource=membership,
+               metadata={"role": target_role, "email": email, "designation": designation})
+
+        transaction.on_commit(lambda: send_member_welcome_email.delay(str(membership.pk)))
+
+        return Response(MemberSerializer(membership).data, status=status.HTTP_201_CREATED)
 
 
 def _check_can_manage(actor, target, new_role=None):
     """Owners manage everyone. Admins manage only Project Managers and Members,
-    and cannot grant Owner/Admin."""
+    and cannot grant Owner/Admin. Project Managers manage Members."""
     if actor.role == Role.OWNER:
         return
-    if target.role in (Role.OWNER, Role.ADMIN):
-        raise PermissionDenied("Insufficient role to manage this member.")
-    if new_role in (Role.OWNER, Role.ADMIN):
-        raise PermissionDenied("Insufficient role to assign that role.")
+    if actor.role == Role.ADMIN:
+        if target.role in (Role.OWNER, Role.ADMIN):
+            raise PermissionDenied("Insufficient role to manage this member.")
+        if new_role in (Role.OWNER, Role.ADMIN):
+            raise PermissionDenied("Insufficient role to assign that role.")
+        return
+    if actor.role == Role.PROJECT_MANAGER:
+        if target.role != Role.MEMBER:
+            raise PermissionDenied("Project Managers can only manage Team Members.")
+        if new_role and new_role != Role.MEMBER:
+            raise PermissionDenied("Project Managers cannot change members to other roles.")
+        return
+    raise PermissionDenied("Insufficient privileges to manage members.")
 
 
 def _guard_last_owner(target, losing_owner):
@@ -77,20 +185,64 @@ def _guard_last_owner(target, losing_owner):
 class MemberDetailView(TenantScopedMixin, GenericAPIView):
     queryset = Membership.objects.select_related("user", "workspace")
     serializer_class = MemberSerializer
-    required_roles = {"PATCH": MANAGE_ROLES, "DELETE": MANAGE_ROLES}
+    required_roles = {"PATCH": PM_UP, "DELETE": MANAGE_ROLES}
 
     @transaction.atomic
     def patch(self, request, **kwargs):
         target = get_object_or_404(self.get_queryset(), pk=kwargs["member_id"])
-        s = RoleChangeSerializer(data=request.data)
+        s = MemberUpdateSerializer(data=request.data)
         s.is_valid(raise_exception=True)
-        new_role = s.validated_data["role"]
-        _check_can_manage(request.membership, target, new_role)
-        _guard_last_owner(target, losing_owner=new_role != Role.OWNER)
-        old_role, target.role = target.role, new_role
-        target.save(update_fields=["role"])
-        record("membership.role_changed", actor=request.user, workspace=target.workspace,
-               resource=target, metadata={"from": old_role, "to": new_role})
+        d = s.validated_data
+
+        new_role = d.get("role")
+        if new_role is not None:
+            _check_can_manage(request.membership, target, new_role)
+            _guard_last_owner(target, losing_owner=new_role != Role.OWNER)
+            old_role, target.role = target.role, new_role
+            record("membership.role_changed", actor=request.user, workspace=target.workspace,
+                   resource=target, metadata={"from": old_role, "to": new_role})
+
+        if "designation" in d:
+            target.designation = d["designation"]
+        if "contact_number" in d:
+            target.contact_number = d["contact_number"]
+        if "is_active" in d:
+            _check_can_manage(request.membership, target)
+            if target.role == Role.OWNER and not d["is_active"]:
+                raise ValidationError({"detail": "Cannot deactivate the workspace Owner."})
+            target.is_active = d["is_active"]
+
+        target.save()
+
+        # Update user profile fields if provided
+        user_updates = []
+        if "first_name" in d:
+            target.user.first_name = d["first_name"]
+            user_updates.append("first_name")
+        if "last_name" in d:
+            target.user.last_name = d["last_name"]
+            user_updates.append("last_name")
+        if "designation" in d:
+            target.user.designation = d["designation"]
+            user_updates.append("designation")
+        if "contact_number" in d:
+            target.user.contact_number = d["contact_number"]
+            user_updates.append("contact_number")
+        if user_updates:
+            target.user.save(update_fields=user_updates)
+
+        # Update assigned projects if provided
+        if "project_ids" in d:
+            ws = target.workspace
+            target_user = target.user
+            projects = Project.objects.filter(workspace=ws, pk__in=d["project_ids"])
+            ProjectMember.objects.filter(workspace=ws, user=target_user).exclude(project__in=projects).delete()
+            for p in projects:
+                ProjectMember.objects.get_or_create(workspace=ws, project=p, user=target_user)
+
+        record("membership.updated", actor=request.user, workspace=target.workspace,
+               resource=target, metadata={"is_active": target.is_active, "role": target.role})
+
         return Response(MemberSerializer(target).data)
 
     @transaction.atomic
