@@ -941,7 +941,7 @@ export default function Dashboard() {
             {/* Projects Tab */}
             <Tab eventKey="projects" title={isPM ? `My Projects (${projects.length})` : `Projects (${projects.length})`}>
               <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                <h2 className="h6 mb-0">{isPM ? "Projects Under Management" : "All Company Projects"}</h2>
+                <h2 className="h5 mb-0">Projects in {workspace.workspace_name}</h2>
                 <div className="d-flex gap-2">
                   <Form.Select size="sm" style={{ width: "auto" }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filter status">
                     <option value="all">All statuses</option>
@@ -1152,7 +1152,7 @@ export default function Dashboard() {
               )}
               {can(MANAGE) && (
                 <Button variant="outline-secondary" size="sm" className="text-start" onClick={() => setShowNewProject(true)}>
-                  📁 Create New Project
+                  📁 Add Workspace Project
                 </Button>
               )}
               <Link to="/app/notifications" className="btn btn-sm btn-outline-secondary text-start">

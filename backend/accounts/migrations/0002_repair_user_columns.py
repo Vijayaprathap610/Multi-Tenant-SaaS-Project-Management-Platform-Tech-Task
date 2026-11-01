@@ -29,3 +29,4 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(add_user_columns, reverse_code=migrations.RunPython.noop),
     ]
+

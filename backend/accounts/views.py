@@ -61,16 +61,38 @@ class RegisterView(PublicView):
 def _credential_login(request, *, platform_admin):
     s = LoginSerializer(data=request.data)
     s.is_valid(raise_exception=True)
-    user = authenticate(request, username=s.validated_data["email"].strip().lower(),
-                        password=s.validated_data["password"])
+
+    user = authenticate(
+        request,
+        username=s.validated_data["email"].strip().lower(),
+        password=s.validated_data["password"],
+    )
+
     if user is None:
-        record("platform_admin.login_failed" if platform_admin else "auth.login_failed")
+        record(
+            "platform_admin.login_failed"
+            if platform_admin
+            else "auth.login_failed"
+        )
         return None
-    if platform_admin and not user.is_platform_admin:
-        record("platform_admin.login_failed")
+
+    # Strict separation between ordinary users and platform admins.
+    if user.is_platform_admin != platform_admin:
+        record(
+            "platform_admin.login_failed"
+            if platform_admin
+            else "auth.login_failed",
+            actor=user,
+        )
         return None
-    login(request, user)  # rotates the session key
-    record("platform_admin.login" if user.is_platform_admin else "auth.login", actor=user)
+
+    login(request, user)
+
+    record(
+        "platform_admin.login" if platform_admin else "auth.login",
+        actor=user,
+    )
+
     return user
 
 
