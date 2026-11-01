@@ -43,7 +43,9 @@ export default function Landing() {
           </div>
         </Container>
       </main>
-      <footer className="text-center text-muted py-4 small">Tech Task</footer>
+      <footer className="text-center text-muted py-4 small">
+        <span>Tech Task</span> · <Link to="/platform-admin/login" className="text-muted text-decoration-none">Platform Admin</Link>
+      </footer>
     </>
   );
 }

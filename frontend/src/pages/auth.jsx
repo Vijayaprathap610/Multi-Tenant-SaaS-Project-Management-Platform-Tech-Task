@@ -65,6 +65,11 @@ export function Login() {
         <Link to="/forgot-password">Forgot password?</Link>
         <Link to="/register">Create an account</Link>
       </div>
+      <div className="text-center mt-3 pt-2 border-top small">
+        <Link to="/platform-admin/login" className="text-muted text-decoration-none">
+          Platform Admin Login &rarr;
+        </Link>
+      </div>
     </Shell>
   );
 }
