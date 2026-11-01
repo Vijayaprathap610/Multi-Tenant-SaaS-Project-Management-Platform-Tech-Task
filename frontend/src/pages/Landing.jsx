@@ -17,7 +17,8 @@ export default function Landing() {
       <header className="tt-navbar py-3">
         <Container className="d-flex justify-content-between align-items-center">
           <Logo size={34} />
-          <nav aria-label="Public" className="d-flex gap-2">
+          <nav aria-label="Public" className="d-flex align-items-center gap-2">
+            <Link to="/platform-admin/login" className="btn btn-outline-secondary">Platform Admin</Link>
             <Link to="/login" className="btn btn-outline-primary">Log in</Link>
             <Link to="/register" className="btn btn-primary">Get started</Link>
           </nav>

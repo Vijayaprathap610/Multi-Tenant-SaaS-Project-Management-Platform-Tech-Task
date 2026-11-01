@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Alert, Button, Card, Form, Table } from "react-bootstrap";
-import { Navigate, useNavigate } from "react-router";
+import { Link, Navigate, useNavigate } from "react-router";
 import { api, ensureCsrf, errorMessage } from "../api/client";
 import { Loading, PasswordInput } from "../components/common";
 import Logo from "../components/Logo";
@@ -38,6 +38,11 @@ export function PlatformAdminLogin() {
           <PasswordInput id="password" label="Password" value={password} autoComplete="current-password" onChange={(e) => setPassword(e.target.value)} />
           <Button type="submit" className="w-100" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</Button>
         </Form>
+        <div className="text-center mt-3 pt-2 border-top">
+          <Link to="/login" className="small text-muted text-decoration-none">
+            &larr; Return to Workspace Login
+          </Link>
+        </div>
       </Card.Body></Card>
     </AuthLayout>
   );
