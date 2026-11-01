@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Alert, Badge, Button, Card, Form, ListGroup, Modal, Table, Tab, Tabs } from "react-bootstrap";
+import { Link } from "react-router";
 import { api, errorMessage } from "../api/client";
 import { ConfirmModal, EmptyState, ErrorAlert, Loading, fmtDateTime } from "../components/common";
 import { useAuth } from "../context/AuthContext";
@@ -53,6 +54,12 @@ function Members() {
   };
   return (
     <>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <p className="small text-muted mb-0">Manage roles and project assignments for workspace users.</p>
+        <Link to="/app?tab=team" className="btn btn-sm btn-primary">
+          ➕ Create / Manage Team
+        </Link>
+      </div>
       <ErrorAlert error={error || err} />
       {loading && <Loading />}
       <div className="table-responsive"><Table className="bg-white align-middle">

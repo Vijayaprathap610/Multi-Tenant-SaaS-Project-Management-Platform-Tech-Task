@@ -464,13 +464,11 @@ function AssignProjectsModal({ show, onHide, member, projects, onUpdated }) {
 }
 
 // 5. Team Management View (Company Owner & Project Manager)
-function TeamManagementView({ members, projects, role, reloadMembers }) {
+function TeamManagementView({ members, projects, role, reloadMembers, onOpenCreatePM, onOpenCreateTM }) {
   const { base } = useWorkspace();
   const isOwnerOrAdmin = role === "owner" || role === "admin";
   const isPM = role === "project_manager";
 
-  const [showCreatePM, setShowCreatePM] = useState(false);
-  const [showCreateTM, setShowCreateTM] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
   const [managingProjects, setManagingProjects] = useState(null);
   const [toggleActiveTarget, setToggleActiveTarget] = useState(null);
@@ -534,12 +532,12 @@ function TeamManagementView({ members, projects, role, reloadMembers }) {
         </div>
         <div className="d-flex gap-2">
           {isOwnerOrAdmin && (
-            <Button variant="primary" onClick={() => setShowCreatePM(true)}>
+            <Button variant="primary" onClick={onOpenCreatePM}>
               ➕ Create Project Manager
             </Button>
           )}
           {(isOwnerOrAdmin || isPM) && (
-            <Button variant={isPM ? "primary" : "outline-primary"} onClick={() => setShowCreateTM(true)}>
+            <Button variant={isPM ? "primary" : "outline-primary"} onClick={onOpenCreateTM}>
               👥 Create Team Member
             </Button>
           )}
@@ -664,27 +662,6 @@ function TeamManagementView({ members, projects, role, reloadMembers }) {
       )}
 
       {/* Modals */}
-      <CreatePMModal
-        show={showCreatePM}
-        onHide={() => setShowCreatePM(false)}
-        onCreated={() => {
-          setShowCreatePM(false);
-          setNotice("Project Manager account created successfully! Notification email sent.");
-          reloadMembers();
-        }}
-      />
-
-      <CreateTeamMemberModal
-        show={showCreateTM}
-        projects={projects}
-        onHide={() => setShowCreateTM(false)}
-        onCreated={() => {
-          setShowCreateTM(false);
-          setNotice("Team Member account created and assigned to project! Notification email sent.");
-          reloadMembers();
-        }}
-      />
-
       <EditMemberModal
         show={Boolean(editingMember)}
         member={editingMember}
@@ -741,6 +718,9 @@ export default function Dashboard() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showNewProject, setShowNewProject] = useState(false);
+  const [showCreatePM, setShowCreatePM] = useState(false);
+  const [showCreateTM, setShowCreateTM] = useState(false);
+  const [actionNotice, setActionNotice] = useState("");
   const [activeTab, setActiveTab] = useState(tabFromUrl || defaultTab);
   const [taskFilter, setTaskFilter] = useState("");
 
@@ -830,6 +810,12 @@ export default function Dashboard() {
 
   return (
     <>
+      {actionNotice && (
+        <Alert variant="success" dismissible onClose={() => setActionNotice("")} className="mb-3 shadow-sm">
+          {actionNotice}
+        </Alert>
+      )}
+
       {/* Role-Specific Corporate Header Banner */}
       <div className="bg-white p-4 rounded border mb-4 shadow-sm">
         <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
@@ -844,29 +830,39 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="d-flex flex-wrap align-items-center gap-2">
+            {isOwnerOrAdmin && (
+              <Button variant="primary" size="sm" onClick={() => setShowCreatePM(true)}>
+                ➕ Create Project Manager
+              </Button>
+            )}
+            {(isOwnerOrAdmin || isPM) && (
+              <Button variant={isPM ? "primary" : "outline-primary"} size="sm" onClick={() => setShowCreateTM(true)}>
+                👥 Create Team Member
+              </Button>
+            )}
+            {can(MANAGE) && (
+              <Button variant="outline-secondary" size="sm" onClick={() => setShowNewProject(true)}>
+                📁 + New project
+              </Button>
+            )}
             {projects.length > 0 && (
               <Form.Select
                 size="sm"
-                style={{ width: "auto", minWidth: 180 }}
+                style={{ width: "auto", minWidth: 160 }}
                 aria-label="Quick jump to project"
                 defaultValue=""
                 onChange={(e) => {
                   if (e.target.value) navigate(`/app/projects/${e.target.value}/board`);
                 }}
               >
-                <option value="" disabled>Jump to project board…</option>
+                <option value="" disabled>Jump to board…</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>{p.name} ({p.key})</option>
                 ))}
               </Form.Select>
             )}
             {can(MANAGE) && (
-              <Button variant="primary" size="sm" onClick={() => setShowNewProject(true)}>
-                + New project
-              </Button>
-            )}
-            {can(MANAGE) && (
-              <Link to="/app/settings" className="btn btn-sm btn-outline-primary">
+              <Link to="/app/settings" className="btn btn-sm btn-outline-secondary">
                 Settings
               </Link>
             )}
@@ -897,6 +893,13 @@ export default function Dashboard() {
               <small className="text-muted">
                 {isOwnerOrAdmin ? "Leading project delivery" : "Active tasks across projects"}
               </small>
+              {isOwnerOrAdmin && pmCount === 0 && (
+                <div className="mt-2">
+                  <Button size="sm" variant="outline-primary" className="py-0 px-2 small" onClick={() => setShowCreatePM(true)}>
+                    + Create PM
+                  </Button>
+                </div>
+              )}
             </Card.Body>
           </Card>
         </div>
@@ -910,6 +913,13 @@ export default function Dashboard() {
                 {isPM ? tmCount : membersFetch.loading ? "…" : members.length}
               </div>
               <small className="text-muted">In this company</small>
+              {isPM && tmCount === 0 && (
+                <div className="mt-2">
+                  <Button size="sm" variant="outline-primary" className="py-0 px-2 small" onClick={() => setShowCreateTM(true)}>
+                    + Create Member
+                  </Button>
+                </div>
+              )}
             </Card.Body>
           </Card>
         </div>
@@ -1009,6 +1019,8 @@ export default function Dashboard() {
                   projects={projects}
                   role={role}
                   reloadMembers={membersFetch.reload}
+                  onOpenCreatePM={() => setShowCreatePM(true)}
+                  onOpenCreateTM={() => setShowCreateTM(true)}
                 />
               </Tab>
             )}
@@ -1123,19 +1135,24 @@ export default function Dashboard() {
               <span className="fw-semibold">Quick Actions</span>
             </Card.Header>
             <Card.Body className="d-flex flex-column gap-2">
-              {can(MANAGE) && (
-                <Button variant="outline-primary" size="sm" className="text-start" onClick={() => setShowNewProject(true)}>
-                  ➕ Create New Project
-                </Button>
-              )}
               {isOwnerOrAdmin && (
-                <Button variant="outline-primary" size="sm" className="text-start" onClick={() => setActiveTab("team")}>
-                  👔 Manage Project Managers
+                <Button variant="primary" size="sm" className="text-start" onClick={() => setShowCreatePM(true)}>
+                  ➕ Create Project Manager
                 </Button>
               )}
-              {isPM && (
-                <Button variant="outline-primary" size="sm" className="text-start" onClick={() => setActiveTab("team")}>
-                  👥 Manage Team Members
+              {(isOwnerOrAdmin || isPM) && (
+                <Button variant={isPM ? "primary" : "outline-primary"} size="sm" className="text-start" onClick={() => setShowCreateTM(true)}>
+                  👥 Create Team Member
+                </Button>
+              )}
+              {(isOwnerOrAdmin || isPM) && (
+                <Button variant="outline-secondary" size="sm" className="text-start" onClick={() => handleSelectTab("team")}>
+                  👔 View Team & Roles ({members.length})
+                </Button>
+              )}
+              {can(MANAGE) && (
+                <Button variant="outline-secondary" size="sm" className="text-start" onClick={() => setShowNewProject(true)}>
+                  📁 Create New Project
                 </Button>
               )}
               <Link to="/app/notifications" className="btn btn-sm btn-outline-secondary text-start">
@@ -1202,7 +1219,34 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <NewProjectModal show={showNewProject} onHide={() => setShowNewProject(false)} onCreated={() => { setShowNewProject(false); projectsFetch.reload(); }} />
+      <NewProjectModal
+        show={showNewProject}
+        onHide={() => setShowNewProject(false)}
+        onCreated={() => { setShowNewProject(false); projectsFetch.reload(); }}
+      />
+
+      <CreatePMModal
+        show={showCreatePM}
+        onHide={() => setShowCreatePM(false)}
+        onCreated={(newMember) => {
+          setShowCreatePM(false);
+          setActionNotice(`Project Manager account created for ${newMember?.email || "new user"}! A welcome email has been sent.`);
+          handleSelectTab("team");
+          membersFetch.reload();
+        }}
+      />
+
+      <CreateTeamMemberModal
+        show={showCreateTM}
+        projects={projects}
+        onHide={() => setShowCreateTM(false)}
+        onCreated={(newMember) => {
+          setShowCreateTM(false);
+          setActionNotice(`Team Member account created for ${newMember?.email || "new user"} and assigned! A welcome email has been sent.`);
+          handleSelectTab("team");
+          membersFetch.reload();
+        }}
+      />
     </>
   );
 }
