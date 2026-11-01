@@ -12,3 +12,4 @@ frontend/dist/
 *.sql
 celerybeat-schedule*
 package-lock.backup.json
+test-results/
