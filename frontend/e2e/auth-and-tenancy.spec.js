@@ -1,13 +1,16 @@
 import { expect, test } from "@playwright/test";
 import { createProject, login, onboard, register, uniqueEmail } from "./helpers";
 
-test("registration, onboarding, logout and unauthorized navigation", async ({ page }) => {
+test("registration, onboarding, logout and unauthorized navigation", async ({ page, isMobile }) => {
   const email = uniqueEmail("owner");
   await register(page, email);
   await login(page, email);
   await onboard(page, "Acme E2E");
-  await expect(page.getByRole("heading", { name: /projects in acme e2e/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /all workspace projects|projects in/i })).toBeVisible();
 
+  if (isMobile) {
+    await page.getByRole("button", { name: /toggle navigation/i }).click();
+  }
   await page.getByRole("button", { name: email }).click();
   await page.getByText("Log out", { exact: true }).click();
   await expect(page).toHaveURL(/\/login/);
@@ -40,3 +43,5 @@ test("responsive: mobile layout collapses the navigation", async ({ page, isMobi
   await register(page, email); await login(page, email); await onboard(page, "Mobile Co");
   await expect(page.getByRole("button", { name: /toggle navigation/i })).toBeVisible();
 });
+
+

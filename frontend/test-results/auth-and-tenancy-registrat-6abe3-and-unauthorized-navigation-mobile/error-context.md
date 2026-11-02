@@ -12,77 +12,110 @@
 # Error details
 
 ```
-Error: expect(locator).toBeVisible() failed
+Test timeout of 60000ms exceeded.
+```
 
-Locator: getByRole('heading', { name: /projects in acme e2e/i })
-Expected: visible
-Timeout: 5000ms
-Error: element(s) not found
-
+```
+Error: locator.click: Test timeout of 60000ms exceeded.
 Call log:
-  - Expect "toBeVisible" getByRole('heading', { name: /projects in acme e2e/i }) with timeout 5000ms
-  - waiting for getByRole('heading', { name: /projects in acme e2e/i })
+  - waiting for getByRole('button', { name: 'owner+1793531715927499@e2e.test' })
 
 ```
 
+# Page snapshot
+
 ```yaml
-- navigation:
-  - link "Tech Task home":
-    - /url: /app
-    - img "Tech Task logo"
-    - text: Tech Task
-  - button "Toggle navigation"
-- navigation "Workspace":
-  - link "Dashboard":
-    - /url: /app
-  - link "Notifications":
-    - /url: /app/notifications
-  - link "Workspace settings":
-    - /url: /app/settings
-  - link "Billing":
-    - /url: /app/billing
-  - link "Profile":
-    - /url: /app/profile
-- main:
-  - heading "Welcome, owner+1793527166831807" [level=1]
-  - paragraph:
-    - text: "Workspace:"
-    - strong: Acme E2E
-    - text: "· Role: owner"
-  - button "+ New project"
-  - link "Workspace settings":
-    - /url: /app/settings
-  - text: Total Projects 0 0 active Assigned To Me 0 Tasks across projects Team Members 1 In this workspace Recent Alerts 0
-  - link "View notifications":
-    - /url: /app/notifications
-  - tablist:
-    - tab "Projects (0)" [selected]
-    - tab "My Tasks (0)"
-    - tab "Activity Feed"
-  - tabpanel "Projects (0)":
-    - heading "All Workspace Projects" [level=2]
-    - combobox "Filter status":
-      - option "All statuses" [selected]
-      - option "Active"
-      - option "Archived"
-    - textbox "Search projects":
-      - /placeholder: Filter by name…
-    - heading "No projects found" [level=2]
-    - text: Create your first project to begin organizing work.
-  - text: Quick Actions
-  - button "➕ Create New Project"
-  - link "🔔 View Notifications (0)":
-    - /url: /app/notifications
-  - link "⚙️ Workspace Settings & Team":
-    - /url: /app/settings
-  - link "💳 Subscription & Plan":
-    - /url: /app/billing
-  - link "👤 My Profile Settings":
-    - /url: /app/profile
-  - text: Workspace Members
-  - link "Manage":
-    - /url: /app/settings
-  - text: owner+1793527166831807@e2e.test owner
+- generic [ref=f1e2]:
+  - navigation [ref=f1e3]:
+    - generic [ref=f1e4]:
+      - link "Tech Task home" [ref=f1e6] [cursor=pointer]:
+        - /url: /app
+        - img "Tech Task logo" [ref=f1e7]
+        - generic [ref=f1e13]: Tech Task
+      - button "Toggle navigation" [ref=f1e14] [cursor=pointer]
+  - generic [ref=f1e17]:
+    - navigation "Workspace" [ref=f1e18]:
+      - link "Dashboard" [ref=f1e19] [cursor=pointer]:
+        - /url: /app
+      - link "Notifications" [ref=f1e20] [cursor=pointer]:
+        - /url: /app/notifications
+      - link "Workspace settings" [ref=f1e21] [cursor=pointer]:
+        - /url: /app/settings
+      - link "Billing" [ref=f1e22] [cursor=pointer]:
+        - /url: /app/billing
+      - link "Profile" [ref=f1e23] [cursor=pointer]:
+        - /url: /app/profile
+    - main [ref=f1e24]:
+      - generic [ref=f1e26]:
+        - generic [ref=f1e27]:
+          - heading "Welcome, owner+1793531715927499" [level=1] [ref=f1e28]
+          - paragraph [ref=f1e29]:
+            - text: "Workspace:"
+            - strong [ref=f1e30]: Acme E2E
+            - text: "· Role:"
+            - generic [ref=f1e31]: owner
+        - generic [ref=f1e32]:
+          - button "+ New project" [ref=f1e33] [cursor=pointer]
+          - link "Workspace settings" [ref=f1e34] [cursor=pointer]:
+            - /url: /app/settings
+      - generic [ref=f1e35]:
+        - generic [ref=f1e38]:
+          - generic [ref=f1e39]: Total Projects
+          - generic [ref=f1e40]: "0"
+          - generic [ref=f1e41]: 0 active
+        - generic [ref=f1e44]:
+          - generic [ref=f1e45]: Assigned To Me
+          - generic [ref=f1e46]: "0"
+          - text: Tasks across projects
+        - generic [ref=f1e49]:
+          - generic [ref=f1e50]: Team Members
+          - generic [ref=f1e51]: "1"
+          - text: In this workspace
+        - generic [ref=f1e54]:
+          - generic [ref=f1e55]: Recent Alerts
+          - generic [ref=f1e56]: "0"
+          - link "View notifications" [ref=f1e58] [cursor=pointer]:
+            - /url: /app/notifications
+      - generic [ref=f1e59]:
+        - generic [ref=f1e60]:
+          - tablist [ref=f1e61]:
+            - tab "Projects (0)" [selected] [ref=f1e62] [cursor=pointer]
+            - tab "My Tasks (0)" [ref=f1e63] [cursor=pointer]
+            - tab "Activity Feed" [ref=f1e64] [cursor=pointer]
+          - tabpanel "Projects (0)" [ref=f1e66]:
+            - generic [ref=f1e67]:
+              - heading "All Workspace Projects" [level=2] [ref=f1e68]
+              - generic [ref=f1e69]:
+                - combobox "Filter status" [ref=f1e70]:
+                  - option "All statuses" [selected]
+                  - option "Active"
+                  - option "Archived"
+                - textbox "Search projects" [ref=f1e71]:
+                  - /placeholder: Filter by name…
+            - generic [ref=f1e72]:
+              - heading "No projects found" [level=2] [ref=f1e73]
+              - generic [ref=f1e74]: Create your first project to begin organizing work.
+        - generic [ref=f1e75]:
+          - generic [ref=f1e76]:
+            - generic [ref=f1e77]: Quick Actions
+            - generic [ref=f1e78]:
+              - button "➕ Create New Project" [ref=f1e79] [cursor=pointer]
+              - link "🔔 View Notifications (0)" [ref=f1e80] [cursor=pointer]:
+                - /url: /app/notifications
+              - link "⚙️ Workspace Settings & Team" [ref=f1e81] [cursor=pointer]:
+                - /url: /app/settings
+              - link "💳 Subscription & Plan" [ref=f1e82] [cursor=pointer]:
+                - /url: /app/billing
+              - link "👤 My Profile Settings" [ref=f1e83] [cursor=pointer]:
+                - /url: /app/profile
+          - generic [ref=f1e84]:
+            - generic [ref=f1e85]:
+              - generic [ref=f1e86]: Workspace Members
+              - link "Manage" [ref=f1e87] [cursor=pointer]:
+                - /url: /app/settings
+            - generic [ref=f1e90]:
+              - generic [ref=f1e91]: owner+1793531715927499@e2e.test
+              - generic [ref=f1e92]: owner
 ```
 
 # Test source
@@ -96,10 +129,10 @@ Call log:
   6  |   await register(page, email);
   7  |   await login(page, email);
   8  |   await onboard(page, "Acme E2E");
-> 9  |   await expect(page.getByRole("heading", { name: /projects in acme e2e/i })).toBeVisible();
-     |                                                                              ^ Error: expect(locator).toBeVisible() failed
+  9  |   await expect(page.getByRole("heading", { name: /all workspace projects/i })).toBeVisible();
   10 | 
-  11 |   await page.getByRole("button", { name: email }).click();
+> 11 |   await page.getByRole("button", { name: email }).click();
+     |                                                   ^ Error: locator.click: Test timeout of 60000ms exceeded.
   12 |   await page.getByText("Log out", { exact: true }).click();
   13 |   await expect(page).toHaveURL(/\/login/);
   14 |   await page.goto("/app");
@@ -132,4 +165,6 @@ Call log:
   41 |   await expect(page.getByRole("button", { name: /toggle navigation/i })).toBeVisible();
   42 | });
   43 | 
+  44 | 
+  45 | 
 ```
