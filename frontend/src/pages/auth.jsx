@@ -67,7 +67,8 @@ export function Login() {
         <Link to="/register">Create an account</Link>
       </div>
       <div className="mt-4 pt-3 border-top text-center">
-        <Link to="/platform-admin/login" className="btn btn-outline-secondary btn-sm w-100">
+        <p className="text-muted small mb-2">Platform Owner / Superadmin Console:</p>
+        <Link to="/platform-admin/login" className="btn btn-dark btn-sm w-100 fw-semibold">
           🛡️ Platform Admin Login
         </Link>
       </div>
@@ -106,6 +107,7 @@ export function Register() {
 
   return (
     <Shell title="Create your account">
+      <p className="text-muted small mb-3">Company Owner Registration. Create a new company workspace.</p>
       {error && <Alert variant="danger" role="alert">{error}</Alert>}
       <Form onSubmit={submit}>
         <div className="row g-2 mb-3">
@@ -131,6 +133,12 @@ export function Register() {
         <Button type="submit" className="w-100" disabled={busy}>{busy ? "Creating…" : "Create account"}</Button>
       </Form>
       <p className="mt-3 mb-0 small">Already registered? <Link to="/login">Log in</Link></p>
+      <div className="mt-4 pt-3 border-top text-center">
+        <p className="text-muted small mb-2">Platform Owner / Superadmin Console:</p>
+        <Link to="/platform-admin/login" className="btn btn-outline-dark btn-sm w-100 fw-semibold">
+          🛡️ Platform Admin Login
+        </Link>
+      </div>
     </Shell>
   );
 }

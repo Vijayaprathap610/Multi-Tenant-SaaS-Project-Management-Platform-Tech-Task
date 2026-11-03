@@ -8,3 +8,5 @@ services:
     volumes: ["./backend:/app", "media:/app/media"]
   beat:
     volumes: ["./backend:/app"]
+  frontend:
+    volumes: ["./frontend/dist:/usr/share/nginx/html"]

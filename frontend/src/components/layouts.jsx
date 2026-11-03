@@ -115,6 +115,11 @@ export function AppLayout() {
             {can(["owner", "admin"]) && <NavLink to="/app/settings" className={link}>Workspace settings</NavLink>}
             {can(["owner", "admin"]) && <NavLink to="/app/billing" className={link}>Billing</NavLink>}
             <NavLink to="/app/profile" className={link}>Profile</NavLink>
+            <div className="mt-4 pt-3 border-top">
+              <Link to="/platform-admin/login" className="btn btn-outline-dark btn-sm w-100 fw-semibold text-start">
+                🛡️ Platform Admin
+              </Link>
+            </div>
           </nav>
           <main className="col-md-10"><Outlet /></main>
         </div>
