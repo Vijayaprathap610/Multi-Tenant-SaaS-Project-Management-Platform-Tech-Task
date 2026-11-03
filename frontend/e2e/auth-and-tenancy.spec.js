@@ -1,47 +1,132 @@
 import { expect, test } from "@playwright/test";
-import { createProject, login, onboard, register, uniqueEmail } from "./helpers";
+import {
+  createProject,
+  login,
+  onboard,
+  register,
+  uniqueEmail,
+} from "./helpers";
 
-test("registration, onboarding, logout and unauthorized navigation", async ({ page, isMobile }) => {
+test("registration, onboarding, logout and unauthorized navigation", async ({
+  page,
+  isMobile,
+}) => {
   const email = uniqueEmail("owner");
+
+  // Registration and login
   await register(page, email);
   await login(page, email);
-  await onboard(page, "Acme E2E");
-  await expect(page.getByRole("heading", { name: /all workspace projects|projects in/i })).toBeVisible();
 
+  // Workspace onboarding
+  await onboard(page, "Acme E2E");
+
+  await expect(
+    page.getByRole("heading", {
+      name: /all workspace projects|projects in/i,
+    })
+  ).toBeVisible();
+
+  // Mobile navbar
   if (isMobile) {
-    await page.getByRole("button", { name: /toggle navigation/i }).click();
+    const navbarToggle = page.locator(".navbar-toggler");
+    const navbarCollapse = page.locator(".navbar-collapse");
+
+    await expect(navbarToggle).toBeVisible();
+
+    console.log("BEFORE CLICK:", {
+      collapseClass: await navbarCollapse.getAttribute("class"),
+    });
+
+    await navbarToggle.click();
+
+    await expect(navbarCollapse).toHaveClass(/show/);
+
+    console.log("AFTER CLICK:", {
+      collapseClass: await navbarCollapse.getAttribute("class"),
+    });
   }
-  await page.getByRole("button", { name: email }).click();
-  await page.getByText("Log out", { exact: true }).click();
+
+  // User dropdown
+  const userMenu = page.locator("#user-menu");
+
+  await expect(userMenu).toBeVisible();
+  await userMenu.click();
+
+  // Logout
+  const logoutButton = page.getByText("Log out", {
+    exact: true,
+  });
+
+  await expect(logoutButton).toBeVisible();
+  await logoutButton.click();
+
   await expect(page).toHaveURL(/\/login/);
+
+  // Protected route verification
   await page.goto("/app");
-  await expect(page).toHaveURL(/\/login/);       // unauthenticated navigation is redirected
+
+  await expect(page).toHaveURL(/\/login/);
 });
 
-test("a user from another company cannot reach a project by URL", async ({ browser }) => {
-  const a = await (await browser.newContext()).newPage();
-  const emailA = uniqueEmail("a");
-  await register(a, emailA); await login(a, emailA); await onboard(a, "Company A");
-  await createProject(a, "Secret", "SEC");
-  const projectUrl = a.url().replace(/\/board$/, "");
+test("a user from another company cannot reach a project by URL", async ({
+  browser,
+}) => {
+  const contextA = await browser.newContext();
+  const pageA = await contextA.newPage();
 
-  const b = await (await browser.newContext()).newPage();
+  const emailA = uniqueEmail("a");
+
+  await register(pageA, emailA);
+  await login(pageA, emailA);
+  await onboard(pageA, "Company A");
+  await createProject(pageA, "Secret", "SEC");
+
+  const projectUrl = pageA.url().replace(/\/board$/, "");
+
+  const contextB = await browser.newContext();
+  const pageB = await contextB.newPage();
+
   const emailB = uniqueEmail("b");
-  await register(b, emailB); await login(b, emailB); await onboard(b, "Company B");
-  await b.goto(projectUrl);
-  await expect(b.getByText(/not found or you do not have access/i)).toBeVisible();
+
+  await register(pageB, emailB);
+  await login(pageB, emailB);
+  await onboard(pageB, "Company B");
+
+  await pageB.goto(projectUrl);
+
+  await expect(
+    pageB.getByText(/not found or you do not have access/i)
+  ).toBeVisible();
+
+  await contextA.close();
+  await contextB.close();
 });
 
 test("password reset page rejects an incomplete link", async ({ page }) => {
   await page.goto("/reset-password");
-  await expect(page.getByText(/incomplete/i)).toBeVisible();
+
+  await expect(
+    page.getByText(/incomplete/i)
+  ).toBeVisible();
 });
 
-test("responsive: mobile layout collapses the navigation", async ({ page, isMobile }) => {
-  test.skip(!isMobile, "mobile project only");
+test("responsive: mobile layout collapses the navigation", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "Mobile project only");
+
   const email = uniqueEmail("m");
-  await register(page, email); await login(page, email); await onboard(page, "Mobile Co");
-  await expect(page.getByRole("button", { name: /toggle navigation/i })).toBeVisible();
+
+  await register(page, email);
+  await login(page, email);
+  await onboard(page, "Mobile Co");
+
+  await expect(
+    page.locator(".navbar-toggler")
+  ).toBeVisible();
+
+  await expect(
+    page.locator(".navbar-collapse")
+  ).not.toHaveClass(/show/);
 });
-
-

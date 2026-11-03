@@ -24,14 +24,20 @@ class ProjectSerializer(serializers.ModelSerializer):
 
 class ProjectMemberSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source="user.email", read_only=True)
+    full_name = serializers.SerializerMethodField()
+    designation = serializers.CharField(source="user.designation", read_only=True, default="")
     user_id = serializers.IntegerField(read_only=True)
     membership_id = serializers.PrimaryKeyRelatedField(
         queryset=Membership.objects.none(), write_only=True, source="workspace_membership")
 
     class Meta:
         model = ProjectMember
-        fields = ["id", "user_id", "email", "membership_id", "created_at"]
+        fields = ["id", "user_id", "email", "full_name", "designation", "membership_id", "created_at"]
         read_only_fields = ["id", "created_at"]
+
+    def get_full_name(self, obj):
+        name = f"{obj.user.first_name} {obj.user.last_name}".strip()
+        return name or obj.user.email.split("@")[0]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

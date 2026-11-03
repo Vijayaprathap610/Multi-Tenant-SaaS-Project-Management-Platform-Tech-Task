@@ -34,7 +34,11 @@ export default function ProjectMembersPage() {
       <ListGroup variant="flush" className="mb-3">
         {members.map((m) => (
           <ListGroup.Item key={m.id} className="d-flex justify-content-between align-items-center">
-            {m.email}
+            <div>
+              <span className="fw-semibold">{m.full_name || m.email}</span>
+              {m.full_name && <small className="text-muted ms-2">({m.email})</small>}
+              {m.designation && <span className="badge bg-light text-dark border ms-2">{m.designation}</span>}
+            </div>
             {canManage && <Button size="sm" variant="outline-danger" onClick={() => remove(m.id)}>Remove</Button>}
           </ListGroup.Item>
         ))}
@@ -45,7 +49,11 @@ export default function ProjectMembersPage() {
             <Form.Label className="visually-hidden">Workspace member to add</Form.Label>
             <Form.Select value={pick} onChange={(e) => setPick(e.target.value)}>
               <option value="">Add a workspace member…</option>
-              {candidates.map((m) => <option key={m.id} value={m.id}>{m.email} ({m.role.replace("_", " ")})</option>)}
+              {candidates.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.full_name ? `${m.full_name} (${m.email})` : m.email} — {m.role?.replace("_", " ")}{m.designation ? ` [${m.designation}]` : ""}
+                </option>
+              ))}
             </Form.Select>
           </Form.Group>
           <Button type="submit" disabled={!pick}>Add</Button>

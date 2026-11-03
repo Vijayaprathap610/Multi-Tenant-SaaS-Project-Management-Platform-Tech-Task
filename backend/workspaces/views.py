@@ -235,10 +235,42 @@ class MemberDetailView(TenantScopedMixin, GenericAPIView):
         if "project_ids" in d:
             ws = target.workspace
             target_user = target.user
-            projects = Project.objects.filter(workspace=ws, pk__in=d["project_ids"])
-            ProjectMember.objects.filter(workspace=ws, user=target_user).exclude(project__in=projects).delete()
-            for p in projects:
-                ProjectMember.objects.get_or_create(workspace=ws, project=p, user=target_user)
+            if request.membership.role == Role.PROJECT_MANAGER:
+                pm_projects = Project.objects.filter(workspace=ws, members__user=request.user)
+                projects = pm_projects.filter(pk__in=d["project_ids"])
+                ProjectMember.objects.filter(workspace=ws, user=target_user, project__in=pm_projects).exclude(project__in=projects).delete()
+                for p in projects:
+                    ProjectMember.objects.get_or_create(workspace=ws, project=p, user=target_user)
+            else:
+                projects = Project.objects.filter(workspace=ws, pk__in=d["project_ids"])
+                ProjectMember.objects.filter(workspace=ws, user=target_user).exclude(project__in=projects).delete()
+                for p in projects:
+                    ProjectMember.objects.get_or_create(workspace=ws, project=p, user=target_user)
+
+        # Handle direct password reset by Owner/Admin
+        if d.get("new_password"):
+            if request.membership.role not in MANAGE_ROLES:
+                raise PermissionDenied("Only workspace owners and administrators can set employee passwords.")
+            from django.contrib.auth.password_validation import validate_password
+            from django.core.exceptions import ValidationError as DjangoValidationError
+            try:
+                validate_password(d["new_password"], user=target.user)
+            except DjangoValidationError as exc:
+                raise ValidationError({"new_password": exc.messages})
+            target.user.set_password(d["new_password"])
+            target.user.save(update_fields=["password"])
+            record("membership.password_reset", actor=request.user, workspace=target.workspace,
+                   resource=target, metadata={"target_user_id": target.user_id})
+
+        # Handle password reset email request by Owner/Admin
+        if d.get("send_reset_email"):
+            if request.membership.role not in MANAGE_ROLES:
+                raise PermissionDenied("Only workspace owners and administrators can send password reset emails.")
+            from accounts.tasks import send_password_reset_email
+            target_uid = target.user_id
+            transaction.on_commit(lambda: send_password_reset_email.delay(target_uid))
+            record("membership.password_reset_email_sent", actor=request.user, workspace=target.workspace,
+                   resource=target, metadata={"target_user_id": target.user_id})
 
         record("membership.updated", actor=request.user, workspace=target.workspace,
                resource=target, metadata={"is_active": target.is_active, "role": target.role})

@@ -98,12 +98,16 @@ def handle_event(event):
     obj = event["data"]["object"]
     kind = event["type"]
     if kind == "checkout.session.completed":
-        sub = Subscription.objects.filter(workspace_id=obj.get("client_reference_id"),
-                                          stripe_customer_id=obj.get("customer") or "none").first()
+        sub = (Subscription.objects.filter(workspace_id=obj.get("client_reference_id")).first()
+               or Subscription.objects.filter(stripe_customer_id=obj.get("customer") or "none").first())
         if sub is None or not obj.get("subscription"):
             return
+        fields_to_update = ["stripe_subscription_id"]
+        if not sub.stripe_customer_id and obj.get("customer"):
+            sub.stripe_customer_id = obj["customer"]
+            fields_to_update.append("stripe_customer_id")
         sub.stripe_subscription_id = obj["subscription"]
-        sub.save(update_fields=["stripe_subscription_id"])
+        sub.save(update_fields=fields_to_update)
         sync_subscription(get_stripe().Subscription.retrieve(obj["subscription"]))
     elif kind in ("customer.subscription.created", "customer.subscription.updated",
                   "customer.subscription.deleted"):

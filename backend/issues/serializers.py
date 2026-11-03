@@ -16,10 +16,11 @@ class IssueBriefSerializer(serializers.ModelSerializer):
     key = serializers.CharField(read_only=True)
     assignee_email = serializers.EmailField(source="assignee.email", read_only=True, default=None)
     status_id = serializers.UUIDField(read_only=True)
+    status_name = serializers.CharField(source="status.name", read_only=True, default="")
 
     class Meta:
         model = Issue
-        fields = ["id", "key", "title", "priority", "status_id", "assignee", "assignee_email",
+        fields = ["id", "key", "title", "priority", "status_id", "status_name", "assignee", "assignee_email",
                   "sprint", "labels", "due_date", "position"]
         read_only_fields = fields
 
@@ -29,6 +30,7 @@ class IssueSerializer(serializers.ModelSerializer):
     reporter_email = serializers.EmailField(source="reporter.email", read_only=True, default=None)
     assignee_email = serializers.EmailField(source="assignee.email", read_only=True, default=None)
     status = serializers.PrimaryKeyRelatedField(queryset=WorkflowStatus.objects.none(), required=False)
+    status_name = serializers.CharField(source="status.name", read_only=True, default="")
     assignee = serializers.PrimaryKeyRelatedField(queryset=User.objects.none(), allow_null=True,
                                                   required=False)
     sprint = serializers.PrimaryKeyRelatedField(queryset=Sprint.objects.none(), allow_null=True,
@@ -38,7 +40,7 @@ class IssueSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Issue
-        fields = ["id", "key", "number", "title", "description", "status", "priority", "assignee",
+        fields = ["id", "key", "number", "title", "description", "status", "status_name", "priority", "assignee",
                   "assignee_email", "reporter_email", "sprint", "labels", "due_date", "position", "created_at",
                   "updated_at"]
         read_only_fields = ["id", "number", "position", "created_at", "updated_at"]

@@ -75,6 +75,8 @@ class MemberUpdateSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     project_ids = serializers.ListField(child=serializers.UUIDField(), required=False)
+    new_password = serializers.CharField(max_length=128, required=False, write_only=True, allow_blank=True)
+    send_reset_email = serializers.BooleanField(required=False, default=False)
 
 
 class RoleChangeSerializer(serializers.Serializer):

@@ -463,6 +463,128 @@ function AssignProjectsModal({ show, onHide, member, projects, onUpdated }) {
   );
 }
 
+// 4b. Reset Password Modal (Company Owner / Admin)
+function ResetPasswordModal({ show, onHide, member, onResetDone }) {
+  const { base } = useWorkspace();
+  const [mode, setMode] = useState("direct"); // "direct" or "email"
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [errors, setErrors] = useState({});
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setErrors({});
+    if (mode === "direct") {
+      if (!newPassword) {
+        setErrors({ new_password: "Password is required." });
+        return;
+      }
+      if (newPassword.length < 8) {
+        setErrors({ new_password: "Password must be at least 8 characters long." });
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setErrors({ confirm_password: "Passwords do not match." });
+        return;
+      }
+    }
+
+    setBusy(true);
+    try {
+      const payload = mode === "direct"
+        ? { new_password: newPassword }
+        : { send_reset_email: true };
+      await api.patch(`${base}/members/${member.id}/`, payload);
+      setNewPassword("");
+      setConfirmPassword("");
+      onResetDone(mode === "direct" ? "Password reset successfully." : "Password reset email sent successfully.");
+    } catch (err) {
+      setErrors(fieldErrors(err));
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!member) return null;
+
+  return (
+    <Modal show={show} onHide={onHide} centered>
+      <Form onSubmit={submit}>
+        <Modal.Header closeButton>
+          <Modal.Title as="h2" className="h5">Reset Password: {member.full_name || member.email}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {error && <Alert variant="danger" role="alert">{error}</Alert>}
+          <div className="mb-3">
+            <Form.Label className="fw-semibold">Reset Method</Form.Label>
+            <div>
+              <Form.Check
+                inline
+                type="radio"
+                id="reset-mode-direct"
+                name="reset_mode"
+                label="Set new password directly"
+                checked={mode === "direct"}
+                onChange={() => setMode("direct")}
+              />
+              <Form.Check
+                inline
+                type="radio"
+                id="reset-mode-email"
+                name="reset_mode"
+                label="Send reset link by email"
+                checked={mode === "email"}
+                onChange={() => setMode("email")}
+              />
+            </div>
+          </div>
+
+          {mode === "direct" ? (
+            <>
+              <Form.Group className="mb-3" controlId="rp-new-pw">
+                <Form.Label>New password</Form.Label>
+                <Form.Control
+                  type="password"
+                  placeholder="Enter at least 8 characters"
+                  value={newPassword}
+                  isInvalid={Boolean(errors.new_password)}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+                <Form.Control.Feedback type="invalid">{errors.new_password}</Form.Control.Feedback>
+              </Form.Group>
+              <Form.Group className="mb-3" controlId="rp-confirm-pw">
+                <Form.Label>Confirm new password</Form.Label>
+                <Form.Control
+                  type="password"
+                  placeholder="Repeat new password"
+                  value={confirmPassword}
+                  isInvalid={Boolean(errors.confirm_password)}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                <Form.Control.Feedback type="invalid">{errors.confirm_password}</Form.Control.Feedback>
+              </Form.Group>
+            </>
+          ) : (
+            <Alert variant="info" className="small">
+              A secure password reset link will be emailed to <strong>{member.email}</strong>. The employee can use this link to set their new password.
+            </Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={onHide}>Cancel</Button>
+          <Button type="submit" disabled={busy}>
+            {busy ? "Processing…" : mode === "direct" ? "Update Password" : "Send Reset Email"}
+          </Button>
+        </Modal.Footer>
+      </Form>
+    </Modal>
+  );
+}
+
 // 5. Team Management View (Company Owner & Project Manager)
 function TeamManagementView({ members, projects, role, reloadMembers, onOpenCreatePM, onOpenCreateTM }) {
   const { base } = useWorkspace();
@@ -472,6 +594,7 @@ function TeamManagementView({ members, projects, role, reloadMembers, onOpenCrea
   const [editingMember, setEditingMember] = useState(null);
   const [managingProjects, setManagingProjects] = useState(null);
   const [toggleActiveTarget, setToggleActiveTarget] = useState(null);
+  const [resetPasswordMember, setResetPasswordMember] = useState(null);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -644,6 +767,15 @@ function TeamManagementView({ members, projects, role, reloadMembers, onOpenCrea
                       <Button variant="outline-secondary" title="View/Assign projects" onClick={() => setManagingProjects(m)}>
                         📁 Projects
                       </Button>
+                      {isOwnerOrAdmin && m.role !== "owner" && (
+                        <Button
+                          variant="outline-secondary"
+                          title="Reset member password"
+                          onClick={() => setResetPasswordMember(m)}
+                        >
+                          🔑 Reset PW
+                        </Button>
+                      )}
                       {m.role !== "owner" && (
                         <Button
                           variant={m.is_active ? "outline-warning" : "outline-success"}
@@ -682,6 +814,16 @@ function TeamManagementView({ members, projects, role, reloadMembers, onOpenCrea
           setManagingProjects(null);
           setNotice("Project assignments updated.");
           reloadMembers();
+        }}
+      />
+
+      <ResetPasswordModal
+        show={Boolean(resetPasswordMember)}
+        member={resetPasswordMember}
+        onHide={() => setResetPasswordMember(null)}
+        onResetDone={(msg) => {
+          setResetPasswordMember(null);
+          setNotice(msg);
         }}
       />
 
@@ -1055,8 +1197,10 @@ export default function Dashboard() {
                         <th>Key</th>
                         <th>Project</th>
                         <th>Title</th>
+                        <th>Status</th>
                         <th>Priority</th>
                         <th>Due Date</th>
+                        <th className="text-end">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1073,9 +1217,22 @@ export default function Dashboard() {
                             </Badge>
                           </td>
                           <td>
-                            <Link to={`/app/projects/${t.project_id}/issues/${t.id}`} className="text-decoration-none text-dark">
+                            <Link to={`/app/projects/${t.project_id}/issues/${t.id}`} className="text-decoration-none text-dark fw-medium">
                               {t.title}
                             </Link>
+                          </td>
+                          <td>
+                            <Badge
+                              bg={
+                                t.status_name?.toLowerCase().includes("done") || t.status_name?.toLowerCase().includes("complete")
+                                  ? "success"
+                                  : t.status_name?.toLowerCase().includes("progress") || t.status_name?.toLowerCase().includes("doing")
+                                  ? "primary"
+                                  : "secondary"
+                              }
+                            >
+                              {t.status_name || "Active"}
+                            </Badge>
                           </td>
                           <td>
                             <Badge bg={t.priority === "urgent" ? "danger" : t.priority === "high" ? "warning" : "secondary"}>
@@ -1083,6 +1240,16 @@ export default function Dashboard() {
                             </Badge>
                           </td>
                           <td>{t.due_date ? fmtDate(t.due_date) : <span className="text-muted">—</span>}</td>
+                          <td className="text-end">
+                            <div className="btn-group btn-group-sm">
+                              <Link to={`/app/projects/${t.project_id}/issues/${t.id}`} className="btn btn-outline-primary">
+                                View / Update
+                              </Link>
+                              <Link to={`/app/projects/${t.project_id}/board`} className="btn btn-outline-secondary">
+                                Board
+                              </Link>
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
