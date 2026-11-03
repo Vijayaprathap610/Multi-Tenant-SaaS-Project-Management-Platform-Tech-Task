@@ -39,8 +39,8 @@ export function PlatformAdminLogin() {
           <Button type="submit" className="w-100" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</Button>
         </Form>
         <div className="text-center mt-3 pt-2 border-top">
-          <Link to="/login" className="small text-muted text-decoration-none">
-            &larr; Return to Workspace Login
+          <Link to="/login" className="btn btn-outline-primary btn-sm w-100">
+            &larr; Go to General Login (Company & Staff)
           </Link>
         </div>
       </Card.Body></Card>

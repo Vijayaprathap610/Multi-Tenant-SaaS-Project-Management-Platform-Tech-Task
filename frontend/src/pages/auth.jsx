@@ -50,6 +50,7 @@ export function Login() {
 
   return (
     <Shell title="Log in">
+      <p className="text-muted small mb-3">General Workspace Login for Company Owners, Project Managers, and Team Members.</p>
       {location.state?.notice && <Alert variant="success">{location.state.notice}</Alert>}
       {error && <Alert variant="danger" role="alert">{error}</Alert>}
       <Form onSubmit={submit} noValidate={false}>

@@ -1025,20 +1025,20 @@ export default function Dashboard() {
         </div>
         <div className="col-sm-6 col-lg-3">
           <Card className="border shadow-sm h-100">
-            <Card.Body>
+            <Card.Body className="d-flex flex-column">
               <div className="text-muted small text-uppercase fw-semibold">
                 {isOwnerOrAdmin ? "Project Managers" : "My Assigned Tasks"}
               </div>
               <div className="h3 mb-0 mt-1">
                 {isOwnerOrAdmin ? pmCount : loadingTasks ? "…" : assignedIssues.length}
               </div>
-              <small className="text-muted">
+              <small className="text-muted mb-auto">
                 {isOwnerOrAdmin ? "Leading project delivery" : "Active tasks across projects"}
               </small>
-              {isOwnerOrAdmin && pmCount === 0 && (
+              {isOwnerOrAdmin && (
                 <div className="mt-2">
-                  <Button size="sm" variant="outline-primary" className="py-0 px-2 small" onClick={() => setShowCreatePM(true)}>
-                    + Create PM
+                  <Button size="sm" variant="outline-primary" className="w-100 py-1" onClick={() => setShowCreatePM(true)}>
+                    ➕ Create PM
                   </Button>
                 </div>
               )}
@@ -1047,18 +1047,18 @@ export default function Dashboard() {
         </div>
         <div className="col-sm-6 col-lg-3">
           <Card className="border shadow-sm h-100">
-            <Card.Body>
+            <Card.Body className="d-flex flex-column">
               <div className="text-muted small text-uppercase fw-semibold">
                 {isPM ? "Team Members" : "Total Team"}
               </div>
               <div className="h3 mb-0 mt-1">
                 {isPM ? tmCount : membersFetch.loading ? "…" : members.length}
               </div>
-              <small className="text-muted">In this company</small>
-              {isPM && tmCount === 0 && (
+              <small className="text-muted mb-auto">In this company</small>
+              {(isOwnerOrAdmin || isPM) && (
                 <div className="mt-2">
-                  <Button size="sm" variant="outline-primary" className="py-0 px-2 small" onClick={() => setShowCreateTM(true)}>
-                    + Create Member
+                  <Button size="sm" variant="outline-primary" className="w-100 py-1" onClick={() => setShowCreateTM(true)}>
+                    👥 Create Member
                   </Button>
                 </div>
               )}
@@ -1082,6 +1082,31 @@ export default function Dashboard() {
           <Tabs activeKey={activeTab} onSelect={handleSelectTab} className="mb-3">
             {/* Projects Tab */}
             <Tab eventKey="projects" title={isPM ? `My Projects (${projects.length})` : `Projects (${projects.length})`}>
+              {/* Quick Action Toolbar on Projects tab */}
+              {(isOwnerOrAdmin || isPM) && (
+                <div className="d-flex flex-wrap gap-2 mb-3 p-3 bg-white rounded border shadow-sm align-items-center">
+                  <span className="small fw-semibold text-muted me-1">Staff & Project Actions:</span>
+                  {isOwnerOrAdmin && (
+                    <Button variant="primary" size="sm" onClick={() => setShowCreatePM(true)}>
+                      ➕ Create Project Manager
+                    </Button>
+                  )}
+                  {(isOwnerOrAdmin || isPM) && (
+                    <Button variant={isPM ? "primary" : "outline-primary"} size="sm" onClick={() => setShowCreateTM(true)}>
+                      👥 Create Team Member
+                    </Button>
+                  )}
+                  {can(MANAGE) && (
+                    <Button variant="outline-secondary" size="sm" onClick={() => setShowNewProject(true)}>
+                      📁 + New project
+                    </Button>
+                  )}
+                  <Button variant="outline-dark" size="sm" onClick={() => handleSelectTab("team")}>
+                    👥 Manage All Staff ({members.length})
+                  </Button>
+                </div>
+              )}
+
               <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                 <h2 className="h5 mb-0">Projects in {workspace.workspace_name} — All Workspace Projects</h2>
                 <div className="d-flex gap-2">
@@ -1150,11 +1175,7 @@ export default function Dashboard() {
             {(isOwnerOrAdmin || isPM) && (
               <Tab
                 eventKey="team"
-                title={
-                  isOwnerOrAdmin
-                    ? `Team Management (${pmCount} PMs)`
-                    : `Team Management (${tmCount} Members)`
-                }
+                title={`👥 Team Management (${members.length})`}
               >
                 <TeamManagementView
                   members={members}

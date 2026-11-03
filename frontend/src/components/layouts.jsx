@@ -108,7 +108,7 @@ export function AppLayout() {
                 to="/app?tab=team"
                 className={() => `tt-sidebar-link${location.pathname === "/app" && location.search.includes("tab=team") ? " active" : ""}`}
               >
-                Team Management
+                👥 Team Management
               </NavLink>
             )}
             <NavLink to="/app/notifications" className={link}>Notifications</NavLink>

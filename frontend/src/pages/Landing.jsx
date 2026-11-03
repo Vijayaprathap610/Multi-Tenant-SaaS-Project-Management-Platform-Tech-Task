@@ -19,7 +19,7 @@ export default function Landing() {
           <Logo size={34} />
           <nav aria-label="Public" className="d-flex align-items-center gap-2">
             <Link to="/platform-admin/login" className="btn btn-outline-secondary">Platform Admin</Link>
-            <Link to="/login" className="btn btn-outline-primary">Log in</Link>
+            <Link to="/login" className="btn btn-outline-primary">General Login</Link>
             <Link to="/register" className="btn btn-primary">Get started</Link>
           </nav>
         </Container>
@@ -30,7 +30,10 @@ export default function Landing() {
           <p className="lead mx-auto" style={{ maxWidth: 640 }}>
             Plan sprints, track issues on a Kanban board and keep every company's work private on one platform.
           </p>
-          <Link to="/register" className="btn btn-primary btn-lg">Create your workspace</Link>
+          <div className="d-flex justify-content-center gap-3 mt-3 flex-wrap">
+            <Link to="/register" className="btn btn-primary btn-lg">Create your workspace</Link>
+            <Link to="/login" className="btn btn-outline-primary btn-lg">General Workspace Login</Link>
+          </div>
         </Container>
         <Container className="pb-5">
           <div className="row g-3">
@@ -45,7 +48,7 @@ export default function Landing() {
         </Container>
       </main>
       <footer className="text-center text-muted py-4 small">
-        <span>Tech Task</span> · <Link to="/platform-admin/login" className="text-muted text-decoration-none">Platform Admin</Link>
+        <span>Tech Task</span> · <Link to="/login" className="text-muted text-decoration-none">General Login</Link> · <Link to="/platform-admin/login" className="text-muted text-decoration-none">Platform Admin</Link>
       </footer>
     </>
   );
