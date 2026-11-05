@@ -656,7 +656,7 @@ function TeamManagementView({ members, projects, role, reloadMembers, onOpenCrea
         <div className="d-flex gap-2">
           {isOwnerOrAdmin && (
             <Button variant="primary" onClick={onOpenCreatePM}>
-              ➕ Create Project Manager
+              ➕ Add Project Manager
             </Button>
           )}
           {(isOwnerOrAdmin || isPM) && (
@@ -974,7 +974,7 @@ export default function Dashboard() {
           <div className="d-flex flex-wrap align-items-center gap-2">
             {isOwnerOrAdmin && (
               <Button variant="primary" size="sm" onClick={() => setShowCreatePM(true)}>
-                ➕ Create Project Manager
+                ➕ Add Project Manager
               </Button>
             )}
             {(isOwnerOrAdmin || isPM) && (
@@ -984,7 +984,7 @@ export default function Dashboard() {
             )}
             {can(MANAGE) && (
               <Button variant="outline-secondary" size="sm" onClick={() => setShowNewProject(true)}>
-                📁 + New project
+                + New project
               </Button>
             )}
             {projects.length > 0 && (
@@ -1088,7 +1088,7 @@ export default function Dashboard() {
                   <span className="small fw-semibold text-muted me-1">Staff & Project Actions:</span>
                   {isOwnerOrAdmin && (
                     <Button variant="primary" size="sm" onClick={() => setShowCreatePM(true)}>
-                      ➕ Create Project Manager
+                      ➕ Add Project Manager
                     </Button>
                   )}
                   {(isOwnerOrAdmin || isPM) && (
@@ -1098,7 +1098,7 @@ export default function Dashboard() {
                   )}
                   {can(MANAGE) && (
                     <Button variant="outline-secondary" size="sm" onClick={() => setShowNewProject(true)}>
-                      📁 + New project
+                      Add Project
                     </Button>
                   )}
                   <Button variant="outline-dark" size="sm" onClick={() => handleSelectTab("team")}>
@@ -1325,7 +1325,7 @@ export default function Dashboard() {
             <Card.Body className="d-flex flex-column gap-2">
               {isOwnerOrAdmin && (
                 <Button variant="primary" size="sm" className="text-start" onClick={() => setShowCreatePM(true)}>
-                  ➕ Create Project Manager
+                  ➕ Add Project Manager
                 </Button>
               )}
               {(isOwnerOrAdmin || isPM) && (

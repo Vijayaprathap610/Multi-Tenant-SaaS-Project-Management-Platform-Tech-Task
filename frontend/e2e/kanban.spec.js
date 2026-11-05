@@ -9,62 +9,140 @@ import {
 } from "./helpers";
 
 async function drag(page, from, to) {
+  // Ensure the source card is in view first
   await from.scrollIntoViewIfNeeded();
-  await to.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(200);
 
   const source = await from.boundingBox();
-  const target = await to.boundingBox();
-
-  if (!source || !target) {
-    throw new Error("Kanban card or destination column is not visible");
+  if (!source) {
+    throw new Error("Kanban card is not visible");
   }
 
-  // Calculate a drop point inside the visible portion
-  // of the destination column.
   const viewport = page.viewportSize();
-
-  const visibleLeft = Math.max(target.x, 5);
-  const visibleRight = Math.min(
-    target.x + target.width,
-    viewport.width - 5
-  );
-
-  const visibleTop = Math.max(target.y, 5);
-  const visibleBottom = Math.min(
-    target.y + target.height,
-    viewport.height - 5
-  );
-
-  if (
-    visibleRight <= visibleLeft ||
-    visibleBottom <= visibleTop
-  ) {
-    throw new Error("Destination column is outside the visible viewport");
-  }
-
   const startX = source.x + source.width / 2;
   const startY = source.y + source.height / 2;
 
-  const endX = (visibleLeft + visibleRight) / 2;
-  const endY = (visibleTop + visibleBottom) / 2;
+  // Now inspect destination
+  let target = await to.boundingBox();
+  if (!target) {
+    throw new Error("Destination column is not visible");
+  }
 
-  await page.mouse.move(startX, startY);
-  await page.mouse.down();
+  // Calculate destination X inside viewport
+  let endX;
+  if (target.x > startX) {
+    // Dragging right
+    if (target.x + 50 < viewport.width - 60) {
+      // Destination is adjacent and already partially visible:
+      // Drop inside its visible left side without triggering auto-scroll!
+      endX = target.x + 45;
+    } else {
+      // Destination is further away (e.g. column 3 'Done'):
+      // Push to the right edge to trigger auto-scroll
+      endX = viewport.width - 20;
+    }
+  } else {
+    // Dragging left (e.g. In Progress -> To Do)
+    if (target.x + target.width - 50 > 60) {
+      endX = target.x + target.width - 50;
+    } else {
+      endX = 20;
+    }
+  }
 
-  // Activate drag sensor.
-  await page.mouse.move(
-    startX + 15,
-    startY + 15,
-    { steps: 5 }
-  );
+  const endY = Math.min(target.y + 100, viewport.height - 30);
 
-  await page.mouse.move(
-    endX,
-    endY,
-    { steps: 30 }
-  );
+  const isMobile = viewport.width <= 767;
 
-  await page.mouse.up();
+  if (isMobile) {
+    const cdp = await page.context().newCDPSession(page);
+    try {
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [
+          {
+            x: startX,
+            y: startY,
+            id: 1,
+          },
+        ],
+      });
+
+      // @hello-pangea/dnd touch sensor requires a ~120ms hold delay before drag begins
+      await page.waitForTimeout(300);
+
+      const steps = 30;
+      for (let step = 1; step <= steps; step++) {
+        const progress = step / steps;
+        await cdp.send("Input.dispatchTouchEvent", {
+          type: "touchMove",
+          touchPoints: [
+            {
+              x: startX + (endX - startX) * progress,
+              y: startY + (endY - startY) * progress,
+              id: 1,
+            },
+          ],
+        });
+        await page.waitForTimeout(20);
+      }
+
+      // If destination column was scrolled offscreen to the right (e.g. column 3 'Done')
+      let finalX = endX;
+      if (target.x > viewport.width) {
+        await page.evaluate(() => {
+          const kb = document.querySelector('.tt-kanban');
+          if (kb) kb.scrollLeft = 400;
+        });
+        await page.waitForTimeout(200);
+        finalX = 220;
+        await cdp.send("Input.dispatchTouchEvent", {
+          type: "touchMove",
+          touchPoints: [
+            {
+              x: finalX,
+              y: endY,
+              id: 1,
+            },
+          ],
+        });
+        await page.waitForTimeout(100);
+      }
+
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchEnd",
+        touchPoints: [
+          {
+            x: finalX,
+            y: endY,
+            id: 1,
+          },
+        ],
+      });
+      await page.waitForTimeout(600);
+    } finally {
+      await cdp.detach();
+    }
+  } else {
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+
+    // Activate drag sensor.
+    await page.mouse.move(
+      startX + 15,
+      startY + 15,
+      { steps: 5 }
+    );
+
+    await page.mouse.move(
+      endX,
+      endY,
+      { steps: 30 }
+    );
+
+    await page.mouse.up();
+    await page.waitForTimeout(300);
+  }
 }
 
 test.describe("Kanban drag and drop", () => {
@@ -145,146 +223,6 @@ test.describe("Kanban drag and drop", () => {
     await onboard(page, "Keyboard Co");
     await createProject(page, "Kbd test", "KBD");
     await createIssue(page, "Keyboard move");
-
-    async function drag(page, from, to) {
-      await from.scrollIntoViewIfNeeded();
-      await to.scrollIntoViewIfNeeded();
-
-      await page.waitForTimeout(300);
-
-      const source = await from.boundingBox();
-      const target = await to.boundingBox();
-
-      if (!source || !target) {
-        throw new Error(
-          "Kanban card or destination column is not visible"
-        );
-      }
-
-      const startX = source.x + source.width / 2;
-      const startY = source.y + source.height / 2;
-
-      const endX = target.x + target.width / 2;
-      const endY = target.y + Math.min(120, target.height - 20);
-
-      const isMobile = page.viewportSize().width <= 767;
-
-      // Mobile diagnostic information
-      if (isMobile) {
-        const debug = await page.evaluate(() => {
-          const card = document.querySelector(
-            '[data-testid="card-BRD-1"]'
-          );
-
-          const column = document.querySelector(
-            '[data-testid="column-In Progress"]'
-          );
-
-          const kanban = document.querySelector(".tt-kanban");
-
-          const cardRect = card?.getBoundingClientRect();
-          const columnRect = column?.getBoundingClientRect();
-
-          return {
-            viewport: {
-              width: window.innerWidth,
-              height: window.innerHeight,
-            },
-            card: cardRect
-              ? {
-                x: cardRect.x,
-                y: cardRect.y,
-                width: cardRect.width,
-                height: cardRect.height,
-              }
-              : null,
-            destination: columnRect
-              ? {
-                x: columnRect.x,
-                y: columnRect.y,
-                width: columnRect.width,
-                height: columnRect.height,
-              }
-              : null,
-            scrollLeft: kanban?.scrollLeft,
-            scrollWidth: kanban?.scrollWidth,
-            clientWidth: kanban?.clientWidth,
-          };
-        });
-
-        console.log("MOBILE DRAG DEBUG:", debug);
-      }
-
-      if (isMobile) {
-        const cdp = await page.context().newCDPSession(page);
-
-        try {
-          await cdp.send("Input.dispatchTouchEvent", {
-            type: "touchStart",
-            touchPoints: [
-              {
-                x: startX,
-                y: startY,
-                id: 1,
-              },
-            ],
-          });
-
-          await page.waitForTimeout(300);
-
-          for (let step = 1; step <= 30; step++) {
-            const progress = step / 30;
-
-            await cdp.send("Input.dispatchTouchEvent", {
-              type: "touchMove",
-              touchPoints: [
-                {
-                  x: startX + (endX - startX) * progress,
-                  y: startY + (endY - startY) * progress,
-                  id: 1,
-                },
-              ],
-            });
-
-            await page.waitForTimeout(15);
-          }
-
-          await cdp.send("Input.dispatchTouchEvent", {
-            type: "touchEnd",
-            touchPoints: [],
-          });
-
-        } finally {
-          await cdp.detach();
-        }
-      } else {
-        // Desktop mouse drag
-        await page.mouse.move(startX, startY);
-
-        await page.mouse.down();
-
-        await page.mouse.move(
-          startX + 20,
-          startY + 20,
-          { steps: 5 }
-        );
-
-        await page.waitForTimeout(200);
-
-        await page.mouse.move(
-          endX,
-          endY,
-          { steps: 25 }
-        );
-
-        await page.waitForTimeout(300);
-
-        await page.mouse.up();
-      }
-
-      await page.waitForTimeout(1000);
-    }
-
 
     const card = page.getByTestId("card-KBD-1");
 

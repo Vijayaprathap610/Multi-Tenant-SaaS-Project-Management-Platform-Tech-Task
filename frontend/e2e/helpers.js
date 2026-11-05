@@ -30,7 +30,7 @@ export async function createProject(page, name, key) {
   await page.getByRole("button", { name: /^\+ New project$/i }).click();
   await page.getByRole("textbox", { name: "Project name" }).fill(name);
   await page.getByRole("textbox", { name: "Project key" }).fill(key);
-  await page.getByRole("button", { name: /create project/i }).click();
+  await page.getByRole("button", { name: /^create project$/i }).click();
   await page.getByRole("link", { name }).click();
 }
 

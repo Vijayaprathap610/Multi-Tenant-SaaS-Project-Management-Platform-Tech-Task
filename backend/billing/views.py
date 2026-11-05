@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
@@ -42,6 +45,7 @@ class BillingStatusView(TenantScopedMixin, APIView):
             "plans": [{"key": k, "name": v["name"], "limits": _limits_payload(k)} for k, v in PLANS.items()],
             "can_manage": request.membership.role == Role.OWNER,
             "stripe_configured": bool(settings.STRIPE_SECRET_KEY),
+            "demo_mode": not bool(settings.STRIPE_SECRET_KEY),
         })
 
 
@@ -51,23 +55,46 @@ class CheckoutView(TenantScopedMixin, APIView):
     def post(self, request, **kwargs):
         ws = request.membership.workspace
         plan = request.data.get("plan")
-        if plan not in ("pro", "business") or not price_id(plan) or not settings.STRIPE_SECRET_KEY:
+        if plan not in ("pro", "business"):
             raise ValidationError({"detail": "This plan is not available for checkout."})
+
+        has_stripe = bool(settings.STRIPE_SECRET_KEY and price_id(plan))
+        use_demo = request.data.get("demo", False) or not has_stripe
+
         sub, _ = Subscription.objects.get_or_create(workspace=ws)
-        if sub.status in ENTITLED_STATUSES and sub.stripe_subscription_id:
-            raise ValidationError({"detail": "Use the billing portal to change an existing subscription."})
-        stripe = get_stripe()
-        if not sub.stripe_customer_id:
-            customer = stripe.Customer.create(email=request.user.email, metadata={"workspace_id": str(ws.id)})
-            sub.stripe_customer_id = customer.id
-            sub.save(update_fields=["stripe_customer_id"])
-        session = stripe.checkout.Session.create(
-            mode="subscription", customer=sub.stripe_customer_id,
-            line_items=[{"price": price_id(plan), "quantity": 1}], client_reference_id=str(ws.id),
-            success_url=f"{settings.FRONTEND_URL}/app/billing?checkout=success",
-            cancel_url=f"{settings.FRONTEND_URL}/app/billing?checkout=cancelled")
-        record("billing.checkout_started", actor=request.user, workspace=ws, metadata={"plan": plan})
-        return Response({"url": session.url})
+
+        if not use_demo:
+            if sub.status in ENTITLED_STATUSES and sub.stripe_subscription_id and not sub.stripe_subscription_id.startswith("demo_"):
+                raise ValidationError({"detail": "Use the billing portal to change an existing subscription."})
+            stripe = get_stripe()
+            if not sub.stripe_customer_id:
+                customer = stripe.Customer.create(email=request.user.email, metadata={"workspace_id": str(ws.id)})
+                sub.stripe_customer_id = customer.id
+                sub.save(update_fields=["stripe_customer_id"])
+            session = stripe.checkout.Session.create(
+                mode="subscription", customer=sub.stripe_customer_id,
+                line_items=[{"price": price_id(plan), "quantity": 1}], client_reference_id=str(ws.id),
+                success_url=f"{settings.FRONTEND_URL}/app/billing?checkout=success",
+                cancel_url=f"{settings.FRONTEND_URL}/app/billing?checkout=cancelled")
+            record("billing.checkout_started", actor=request.user, workspace=ws, metadata={"plan": plan})
+            return Response({"url": session.url})
+        else:
+            # Demo Payment Gateway simulation
+            sub.plan = plan
+            sub.status = "active"
+            sub.current_period_end = timezone.now() + timedelta(days=30)
+            sub.cancel_at_period_end = False
+            if not sub.stripe_customer_id:
+                sub.stripe_customer_id = f"demo_cus_{ws.id}"
+            sub.stripe_subscription_id = f"demo_sub_{ws.id}_{plan}"
+            sub.save()
+            record("billing.checkout_completed", actor=request.user, workspace=ws, metadata={"plan": plan, "gateway": "demo"})
+            return Response({
+                "url": f"{settings.FRONTEND_URL}/app/billing?checkout=success",
+                "success": True,
+                "demo": True,
+                "plan": plan
+            })
 
 
 class PortalView(TenantScopedMixin, APIView):
@@ -78,6 +105,8 @@ class PortalView(TenantScopedMixin, APIView):
             stripe_customer_id="").first()
         if sub is None:
             raise ValidationError({"detail": "No billing account exists yet. Start a subscription first."})
+        if not settings.STRIPE_SECRET_KEY or (sub.stripe_customer_id and sub.stripe_customer_id.startswith("demo_")):
+            return Response({"url": f"{settings.FRONTEND_URL}/app/billing?portal=demo"})
         session = get_stripe().billing_portal.Session.create(
             customer=sub.stripe_customer_id, return_url=f"{settings.FRONTEND_URL}/app/billing")
         return Response({"url": session.url})
@@ -91,7 +120,16 @@ class CancelView(TenantScopedMixin, APIView):
         sub = Subscription.objects.filter(workspace=ws).exclude(stripe_subscription_id="").first()
         if sub is None or sub.status not in ENTITLED_STATUSES:
             raise ValidationError({"detail": "There is no active subscription to cancel."})
-        get_stripe().Subscription.modify(sub.stripe_subscription_id, cancel_at_period_end=True)
+        immediate = request.data.get("immediate", False)
+        if immediate:
+            sub.plan = "free"
+            sub.status = "inactive"
+            sub.cancel_at_period_end = False
+            sub.save()
+            record("billing.subscription_cancelled_immediate", actor=request.user, workspace=ws)
+            return Response({"cancel_at_period_end": False, "plan": "free"})
+        if settings.STRIPE_SECRET_KEY and not sub.stripe_subscription_id.startswith("demo_"):
+            get_stripe().Subscription.modify(sub.stripe_subscription_id, cancel_at_period_end=True)
         sub.cancel_at_period_end = True
         sub.save(update_fields=["cancel_at_period_end"])
         record("billing.cancel_requested", actor=request.user, workspace=ws)
