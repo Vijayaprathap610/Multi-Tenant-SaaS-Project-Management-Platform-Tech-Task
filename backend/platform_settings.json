@@ -1,0 +1,10 @@
+{
+  "allow_registration": true,
+  "maintenance_mode": false,
+  "system_banner": "Notice",
+  "demo_payment_gateway": true,
+  "default_free_members": 3,
+  "default_free_projects": 2,
+  "support_email": "admin@techtask.local",
+  "enforce_strong_passwords": true
+}

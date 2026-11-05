@@ -64,9 +64,61 @@ class LoginTests(BaseAPITest):
     {"total_users", "total_workspaces", "total_memberships", "subscriptions"},
 )
 
+    def test_platform_admin_management_endpoints(self):
+        from workspaces.models import Workspace, Membership, Role
+        ws = Workspace.objects.create(name="Acme Corp", slug="acme")
+        Membership.objects.create(workspace=ws, user=self.user, role=Role.OWNER)
+
+        self.client.force_authenticate(self.admin)
+
+        # Analytics
+        analytics = self.client.get("/api/platform-admin/analytics/")
+        self.assertEqual(analytics.status_code, 200)
+        self.assertIn("total_workspaces", analytics.json())
+
+        # Companies
+        companies = self.client.get("/api/platform-admin/companies/")
+        self.assertEqual(companies.status_code, 200)
+        self.assertTrue(len(companies.json()) >= 1)
+
+        # Company detail
+        detail = self.client.get(f"/api/platform-admin/companies/{ws.id}/")
+        self.assertEqual(detail.status_code, 200)
+        self.assertEqual(detail.json()["workspace"]["name"], "Acme Corp")
+
+        # Company update (plan override)
+        patch_res = self.client.patch(f"/api/platform-admin/companies/{ws.id}/", {"plan": "pro"}, format="json")
+        self.assertEqual(patch_res.status_code, 200)
+
+        # Subscriptions
+        subs = self.client.get("/api/platform-admin/subscriptions/")
+        self.assertEqual(subs.status_code, 200)
+
+        # Users
+        users = self.client.get("/api/platform-admin/users/")
+        self.assertEqual(users.status_code, 200)
+
+        # User toggle active
+        user_patch = self.client.patch(f"/api/platform-admin/users/{self.user.id}/", {"first_name": "Updated"}, format="json")
+        self.assertEqual(user_patch.status_code, 200)
+
+        # Activity
+        activity = self.client.get("/api/platform-admin/activity/")
+        self.assertEqual(activity.status_code, 200)
+
+        # Settings
+        settings_get = self.client.get("/api/platform-admin/settings/")
+        self.assertEqual(settings_get.status_code, 200)
+        settings_post = self.client.post("/api/platform-admin/settings/", {"system_banner": "Notice"}, format="json")
+        self.assertEqual(settings_post.status_code, 200)
+        self.assertEqual(settings_post.json()["system_banner"], "Notice")
+
     def test_ordinary_user_cannot_read_platform_stats(self):
         self.client.force_authenticate(self.user)
         self.assertEqual(self.client.get("/api/platform-admin/stats/").status_code, 403)
+        self.assertEqual(self.client.get("/api/platform-admin/companies/").status_code, 403)
+        self.assertEqual(self.client.get("/api/platform-admin/users/").status_code, 403)
+        self.assertEqual(self.client.get("/api/platform-admin/settings/").status_code, 403)
 
     def test_login_is_rate_limited(self):
         codes = [self.client.post("/api/auth/login/", {"email": "u@x.test", "password": "bad"},

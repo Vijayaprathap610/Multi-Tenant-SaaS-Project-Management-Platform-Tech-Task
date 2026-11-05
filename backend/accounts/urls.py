@@ -13,4 +13,13 @@ urlpatterns = [
     path("auth/password-reset/confirm/", views.PasswordResetConfirmView.as_view()),
     path("platform-admin/login/", views.PlatformAdminLoginView.as_view()),
     path("platform-admin/stats/", views.PlatformAdminStatsView.as_view()),
+    path("platform-admin/analytics/", views.PlatformAdminAnalyticsView.as_view()),
+    path("platform-admin/companies/", views.PlatformAdminCompaniesView.as_view()),
+    path("platform-admin/companies/<uuid:workspace_id>/", views.PlatformAdminCompanyDetailView.as_view()),
+    path("platform-admin/subscriptions/", views.PlatformAdminSubscriptionsView.as_view()),
+    path("platform-admin/subscriptions/<uuid:workspace_id>/", views.PlatformAdminSubscriptionDetailView.as_view()),
+    path("platform-admin/users/", views.PlatformAdminUsersView.as_view()),
+    path("platform-admin/users/<int:user_id>/", views.PlatformAdminUserDetailView.as_view()),
+    path("platform-admin/activity/", views.PlatformAdminActivityView.as_view()),
+    path("platform-admin/settings/", views.PlatformAdminSettingsView.as_view()),
 ]

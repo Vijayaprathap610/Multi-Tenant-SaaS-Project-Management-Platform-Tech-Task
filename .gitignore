@@ -1,15 +1,27 @@
+# OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Environment & secrets
 .env
-*.pyc
-__pycache__/
-node_modules/
-media/
-.venv/
-*/.venv/
-dist/
-frontend/dist/
-*.sqlite3
-*.sqlite3-journal
+*.log
+*.bak
 *.sql
 celerybeat-schedule*
-package-lock.backup.json
+tech-task-backup.sql
 test-results/
+playwright-report/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+backend/.venv/
+.pytest_cache/
+
+# Node
+node_modules/
+frontend/dist/
+package-lock.backup.json
